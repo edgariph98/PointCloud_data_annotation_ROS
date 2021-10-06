@@ -12,4 +12,7 @@ CSCE 482 Senior Capstone Design
     ./ws_setup.sh
     source ~/.bashrc
 ```
-
+### Launching rqt plugin
+```bash
+    rqt --standalone rqt_mypkg
+```
