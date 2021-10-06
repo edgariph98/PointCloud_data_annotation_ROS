@@ -13,6 +13,11 @@ CSCE 482 Senior Capstone Design
     source ~/.bashrc
 ```
 ### Launching rqt plugin
+#### Launch roscore on separate shell
+```bash
+    roscore
+```
+#### Launch rqt_plugin 
 ```bash
     rqt --standalone rqt_mypkg
 ```
