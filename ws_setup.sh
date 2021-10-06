@@ -16,4 +16,4 @@ sudo apt-get install python3-catkin-tools -y
 catkin_make
 
 # sourcing setup.bash and adding it to bashrc
-echo "source $(pwd -P)/devel/setup.bash" >>  ~/.bashrc
+echo "\nsource $(pwd -P)/devel/setup.bash" >>  ~/.bashrc
