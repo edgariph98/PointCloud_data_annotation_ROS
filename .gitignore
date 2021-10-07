@@ -1,0 +1,8 @@
+#build 
+build/
+
+# development for now
+devel/
+
+# ignoring pycache
+*.pyc 
