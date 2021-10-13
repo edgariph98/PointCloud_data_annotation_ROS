@@ -6,3 +6,5 @@ devel/
 
 # ignoring pycache
 *.pyc 
+# ignoring .vscode
+.vscode/
