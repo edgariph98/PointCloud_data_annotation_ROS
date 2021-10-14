@@ -21,6 +21,6 @@ class MyPlugin(Plugin):
         if not args.quiet:
             print('arguments: ', args)
             print('unknowns: ', unknowns)
-
+            
         # Adding Main App Widget 
         context.add_widget(MainApp())
