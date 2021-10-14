@@ -6,6 +6,9 @@ from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget
 
+import rosbag
+from rqt_mypkg.classes.frame import Frame
+
 class MyPlugin(Plugin):
 
     def __init__(self, context):
@@ -25,6 +28,13 @@ class MyPlugin(Plugin):
             print 'arguments: ', args
             print 'unknowns: ', unknowns
 
+        self.frames = []
+
+        self.launch_ui(context)
+
+        self.load_rosbag('/home/trevor/Downloads/mcity1.bag', '/lidar_left/velodyne_points')
+
+    def launch_ui(self, context):
         # Create QWidget
         self._widget = QWidget()
         # Get path to UI file which should be in the "resource" folder of this package
@@ -33,7 +43,7 @@ class MyPlugin(Plugin):
         loadUi(ui_file, self._widget)
         # Give QObjects reasonable names
         self._widget.setObjectName('MyPluginUi')
-        # Show _widget.windowTitle on left-top of each plugin (when 
+        # Show _widget.windowTitle on left-top of each plugin (when
         # it's set in _widget). This is useful when you open multiple 
         # plugins at once. Also if you open multiple instances of your 
         # plugin at once, these lines add number to make it easy to 
@@ -42,6 +52,27 @@ class MyPlugin(Plugin):
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
         # Add widget to the user interface
         context.add_widget(self._widget)
+
+    def load_rosbag(self, path, topic_name):
+        try:
+            self.bag = rosbag.Bag(path)
+        except:
+            rospy.logerr('Unable to open file: %s', path)
+        else:
+            if topic_name not in self.bag.get_type_and_topic_info()[1].keys():
+                rospy.logerr('Topic \'%s\' not found in rosbag', topic_name)
+                self.bag.close()
+                return
+            # Create empty list of Frames for each message
+            self.frames = [Frame]*self.bag.get_message_count(topic_name)
+            # Iterate through msgs and populate the empty list
+            index = 0
+            for topic, msg, t in self.bag.read_messages(topics=[topic_name]):
+                frame = Frame(t)
+                self.frames[index] = frame
+                index += 1
+            # Load first frame to viewer here
+            self.bag.close()
 
     def shutdown_plugin(self):
         # TODO unregister all publishers here
