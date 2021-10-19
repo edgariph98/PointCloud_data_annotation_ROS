@@ -9,14 +9,14 @@ class BagPlayer(QWidget):
 
     # rvizTopic is the topic where pc2 messages are send to display on the rviz main frame
     # pointCloudTopic is the topic where we read messeges from our rosbag
-    def __init__(self, rvizTopic, pointCloudTopic):
+    def __init__(self, rvizTopic):
         super(BagPlayer, self).__init__()
         # used to publish pointcloud messages
         self.bagPublisher = None
         # the bag containing the messages and frames of Frame class as well as current frame number
         self.bag = None
         self.frames = []
-        self.pointCloudTopic = pointCloudTopic
+        self.pointCloudTopic = None
         self.currentFrame = -1
 
         # ui components references
@@ -31,7 +31,8 @@ class BagPlayer(QWidget):
         self.setUpPublisher(rvizTopic)
 
     # updates a bag with the given bag and frames
-    def updateBag(self, _bag, _frames):
+    def updateBag(self, _pointCloudTopic,_bag, _frames):
+        self.pointCloudTopic = _pointCloudTopic
         self.bag = _bag
         self.frames = _frames
         self.currentFrame = 0
