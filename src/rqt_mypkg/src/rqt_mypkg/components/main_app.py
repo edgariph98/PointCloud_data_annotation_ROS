@@ -2,10 +2,11 @@ import os
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QPushButton
+from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame
 import rviz 
 from classes import Frame
 import rosbag
+from .BagPlayer import BagPlayer
 # Main App widget to be imported in RQT Plugin
 class MainApp(QWidget):
     def __init__(self):
@@ -23,12 +24,15 @@ class MainApp(QWidget):
         filePath = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'vizualization_frame.config.rviz')
         reader.readFile( config, filePath)
         self.rviz_frame.load( config )
+        # empty bag player with a topic to publish rviz data and the topic to read messeges from in the bag
+        self.bagPlayer = BagPlayer("/rvizdata","/lidar_left/velodyne_points")
         ####################################
-
         # Loading Box Vertical layout
         self.layout = QVBoxLayout()
         self.layout.addWidget(self.rviz_frame)
+        self.layout.addWidget(self.bagPlayer)
         self.setLayout(self.layout)
+
 
     # opening a rosbag and loading frames
     def load_rosbag(self, path, topic_name):
@@ -49,8 +53,9 @@ class MainApp(QWidget):
                 frame = Frame(t)
                 self.frames[index] = frame
                 index += 1
-            # Load first frame to viewer here
-            self.bag.close()
+            # Load first frame to viewer here and update our bag player with new frames and loaded bag
+            self.bagPlayer.updateBag(self.bag,self.frames)
+
 
 
 
