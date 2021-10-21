@@ -1,5 +1,7 @@
+import os
 import rospy
 import rosbag
+import rospkg
 from python_qt_binding.QtWidgets import QWidget, QFileDialog, QFormLayout, QHBoxLayout, QPushButton, QLabel, QComboBox
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal
@@ -38,6 +40,12 @@ class LoadRosbagPopup(QWidget):
         self.file_button.clicked.connect(self.get_rosbag_filename)
         self.submit_button.clicked.connect(self.on_submit)
         self.cancel_button.clicked.connect(self.close)
+
+        # Load in styling for GUI
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
+        with open(style_path, 'r') as qss:
+            self.style = qss.read()
+        self.setStyleSheet(self.style)
 
     def on_submit(self):
         self.submitted.emit( self.path, self.topic_dropdown.currentText() )

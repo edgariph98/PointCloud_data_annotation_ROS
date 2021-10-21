@@ -24,6 +24,12 @@ class MainApp(QMainWindow):
         self.annotation_groups = []
         # rosbag object
         self.bag = None
+
+        # Load in styling for GUI
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
+        with open(style_path, 'r') as qss:
+            self.style = qss.read()
+        self.setStyleSheet(self.style)
         self.initUI()
 
     def initUI(self):
@@ -35,6 +41,7 @@ class MainApp(QMainWindow):
         filePath = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'vizualization_frame.config.rviz')
         reader.readFile( config, filePath)
         self.rviz_frame.load( config )
+              
         # Create bag player
         self.bagPlayer = BagPlayer('/rvizdata')
 
@@ -47,6 +54,7 @@ class MainApp(QMainWindow):
         central_widget_layout.addWidget(self.bagPlayer)
         central_widget = QWidget()
         central_widget.setLayout(central_widget_layout)
+        # central_widget.setStyleSheet(self.style)
         self.setCentralWidget(central_widget)
 
     def create_top_menubar(self):
@@ -132,4 +140,4 @@ class MainApp(QMainWindow):
                 self.frames[index] = frame
                 index += 1
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.bagPlayer.updateBag(topic_name, self.bag,self.frames)
+            self.bagPlayer.updateBag(topic_name, self.bag, self.frames)
