@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /Annotations1
       Splitter Ratio: 0.5
     Tree Height: 543
   - Class: rviz/Selection
@@ -22,7 +23,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: point cloud displayer
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -76,6 +77,15 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz/InteractiveMarkers
+      Enable Transparency: true
+      Enabled: true
+      Name: Annotations
+      Show Axes: false
+      Show Descriptions: true
+      Show Visual Aids: false
+      Update Topic: /simple_marker/update
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -95,25 +105,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 48.87112045288086
+      Distance: 18.515884399414062
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: -3.728342294692993
+        Y: -11.091486930847168
+        Z: -0.23265959322452545
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.12539833784103394
+      Pitch: 0.9347960352897644
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.3485822677612305
+      Yaw: 0.06858021020889282
     Saved: ~
 Window Geometry:
   Displays:

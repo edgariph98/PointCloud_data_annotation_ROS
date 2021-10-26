@@ -13,6 +13,7 @@ from load_rosbag_popup import LoadRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
 from delete_annotation_group_popup import DeleteAnnotationGroupPopup
 from .BagPlayer import BagPlayer
+from .Annotator import Annotator
 
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
@@ -24,7 +25,7 @@ class MainApp(QMainWindow):
         self.annotation_groups = []
         # rosbag object
         self.bag = None
-
+    
         # Load in styling for GUI
         style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
         with open(style_path, 'r') as qss:
@@ -45,6 +46,8 @@ class MainApp(QMainWindow):
         # Create bag player
         self.bagPlayer = BagPlayer('/rvizdata')
 
+        # Annotator
+        self.annotator = Annotator(self.rviz_frame)
         # Create menubar
         self.create_top_menubar()
 
