@@ -2,7 +2,7 @@ import os
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QMainWindow, qApp, QAction, QMessageBox
+from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QSizePolicy, QFrame
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import pyqtSlot
 import rviz 
@@ -12,6 +12,7 @@ import rosbag
 from load_rosbag_popup import LoadRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
 from delete_annotation_group_popup import DeleteAnnotationGroupPopup
+from annotation_details import AnnotationDetails
 from .BagPlayer import BagPlayer
 
 # Main App widget to be imported in RQT Plugin
@@ -48,10 +49,42 @@ class MainApp(QMainWindow):
         # Create menubar
         self.create_top_menubar()
 
+        # Load in styling for GUI
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
+        with open(style_path, 'r') as qss:
+            style = qss.read()
+        self.setStyleSheet(style)
+
         # Set MainWindow's central widget
-        central_widget_layout = QVBoxLayout()
-        central_widget_layout.addWidget(self.rviz_frame)
-        central_widget_layout.addWidget(self.bagPlayer)
+        # central_widget_layout = QVBoxLayout()
+        # central_widget_layout.addWidget(self.rviz_frame)
+        # central_widget_layout.addWidget(self.bagPlayer)
+        # central_widget = QWidget()
+        # central_widget.setLayout(central_widget_layout)
+        # self.setCentralWidget(central_widget)
+
+
+        central_widget_layout = QHBoxLayout()
+        central_widget_layout.setContentsMargins(0, 0, 0, 0)
+
+        rviz_display_layout = QVBoxLayout()
+        rviz_display_layout.addWidget(self.rviz_frame)
+        rviz_display_layout.addWidget(self.bagPlayer)
+
+        annotations_layout = QVBoxLayout()
+        # annotations_layout.setContentsMargins(0, 0, 0, 0)
+        self.annotation_details = AnnotationDetails(self.annotation_groups)
+        test2 = QWidget()
+        test2.setProperty('class', 'Test')
+
+        title = QLabel('Annotation Details')
+        title.setProperty('class', 'widgetTitle')
+        annotations_layout.addWidget(title)
+        annotations_layout.addWidget(self.annotation_details)
+        annotations_layout.addWidget(test2)
+
+        central_widget_layout.addLayout(rviz_display_layout, 3)
+        central_widget_layout.addLayout(annotations_layout, 1)
         central_widget = QWidget()
         central_widget.setLayout(central_widget_layout)
         # central_widget.setStyleSheet(self.style)
@@ -104,7 +137,10 @@ class MainApp(QMainWindow):
 
     @pyqtSlot(str, QColor, name='create_annotation_group')
     def get_create_annotation_group_data(self, group_name, color):
-        self.annotation_groups.append(AnnotationGroup(group_name, color))
+        new_annotation_group = AnnotationGroup(group_name, color)
+        self.annotation_groups.append(new_annotation_group)
+        # Update drop down options in annotation details window
+        self.annotation_details.add_annotation_group(new_annotation_group)
 
     def launch_delete_annotation_group_popup(self):
         self.dialog = DeleteAnnotationGroupPopup(self.annotation_groups)
