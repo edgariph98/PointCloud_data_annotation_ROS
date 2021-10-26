@@ -12,7 +12,8 @@ import rosbag
 from load_rosbag_popup import LoadRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
 from delete_annotation_group_popup import DeleteAnnotationGroupPopup
-from annotation_details import AnnotationDetails
+from annotation_details_window import AnnotationDetailsWindow
+from annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
 
 # Main App widget to be imported in RQT Plugin
@@ -65,29 +66,21 @@ class MainApp(QMainWindow):
 
 
         central_widget_layout = QHBoxLayout()
-        central_widget_layout.setContentsMargins(0, 0, 0, 0)
 
         rviz_display_layout = QVBoxLayout()
         rviz_display_layout.addWidget(self.rviz_frame)
         rviz_display_layout.addWidget(self.bagPlayer)
 
         annotations_layout = QVBoxLayout()
-        # annotations_layout.setContentsMargins(0, 0, 0, 0)
-        self.annotation_details = AnnotationDetails(self.annotation_groups)
-        test2 = QWidget()
-        test2.setProperty('class', 'Test')
-
-        title = QLabel('Annotation Details')
-        title.setProperty('class', 'widgetTitle')
-        annotations_layout.addWidget(title)
+        self.annotation_list = AnnotationListWindow(self.annotation_groups)
+        self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
+        annotations_layout.addWidget(self.annotation_list)
         annotations_layout.addWidget(self.annotation_details)
-        annotations_layout.addWidget(test2)
 
-        central_widget_layout.addLayout(rviz_display_layout, 3)
+        central_widget_layout.addLayout(rviz_display_layout, 4)
         central_widget_layout.addLayout(annotations_layout, 1)
         central_widget = QWidget()
         central_widget.setLayout(central_widget_layout)
-        # central_widget.setStyleSheet(self.style)
         self.setCentralWidget(central_widget)
 
     def create_top_menubar(self):
@@ -177,3 +170,37 @@ class MainApp(QMainWindow):
                 index += 1
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames)
+
+
+#import numpy as np
+
+# def inside_test(points , cube3d):
+#     """
+#     cube3d  =  numpy array of the shape (8,3) with coordinates in the clockwise order. first the bottom plane is considered then the top one.
+#     points = array of points with shape (N, 3).
+
+#     Returns the indices of the points array which are outside the cube3d
+#     """
+#     b1,b2,b3,b4,t1,t2,t3,t4 = cube3d
+
+#     dir1 = (t1-b1)
+#     size1 = np.linalg.norm(dir1)
+#     dir1 = dir1 / size1
+
+#     dir2 = (b2-b1)
+#     size2 = np.linalg.norm(dir2)
+#     dir2 = dir2 / size2
+
+#     dir3 = (b4-b1)
+#     size3 = np.linalg.norm(dir3)
+#     dir3 = dir3 / size3
+
+#     cube3d_center = (b1 + t3)/2.0
+
+#     dir_vec = points - cube3d_center
+
+#     res1 = np.where( (np.absolute(np.dot(dir_vec, dir1)) * 2) > size1 )[0]
+#     res2 = np.where( (np.absolute(np.dot(dir_vec, dir2)) * 2) > size2 )[0]
+#     res3 = np.where( (np.absolute(np.dot(dir_vec, dir3)) * 2) > size3 )[0]
+
+#     return list( set().union(res1, res2, res3) )

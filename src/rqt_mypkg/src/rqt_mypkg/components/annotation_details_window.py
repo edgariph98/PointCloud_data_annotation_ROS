@@ -1,16 +1,18 @@
 from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox, QLineEdit, QComboBox
 from python_qt_binding.QtGui import QDoubleValidator, QPainter
+from python_qt_binding.QtCore import Qt
 
-class AnnotationDetails(QWidget):
+class AnnotationDetailsWindow(QWidget):
 
     def __init__(self, annotation_groups):
         QWidget.__init__(self)
         # Title
         self.title = QLabel('Annotation Details')
         self.title.setProperty('class', 'widgetTitle')
+        self.title.setAlignment(Qt.AlignHCenter)
         # Label
         self.label_input = QLineEdit()
-        self.label_input.setProperty('Test', True)
+        # self.label_input.setProperty('Test', True)
         # self.label_input.setProperty('class', 'Test')
         # self.setStyle(self.style())
 

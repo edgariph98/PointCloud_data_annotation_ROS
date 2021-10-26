@@ -406,5 +406,12 @@ QLineEdit[Test=true] {
 }
 
 QLabel.widgetTitle {
-	background: green;
+	font-size: 18px;
+	color: #8f8f91;
+	text-align: center;
+	border: 1px solid #8f8f91;
+}
+
+QTreeView {
+	color: #8f8f91;
 }
