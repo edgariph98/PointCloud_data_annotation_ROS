@@ -1,6 +1,6 @@
 from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox, QLineEdit, QComboBox, QTreeView, QAbstractItemView
-from python_qt_binding.QtGui import QDoubleValidator, QColor, QStandardItemModel, QStandardItem, QBrush
-
+from python_qt_binding.QtGui import QPixmap, QColor, QIcon, QStandardItemModel, QStandardItem, QBrush
+from python_qt_binding.QtCore import Qt
 
 class AnnotationListWindow(QWidget):
 
@@ -32,7 +32,6 @@ class AnnotationListWindow(QWidget):
         self.model = QStandardItemModel()
         rootNode = self.model.invisibleRootItem()
         for group in annotation_groups:
-
             rootNode.appendRow([QStandardItem(group.name), None])
 
 
@@ -48,7 +47,7 @@ class AnnotationListWindow(QWidget):
          
         rootNode.appendRow([ branch1, QStandardItem("test b1") ])
         rootNode.appendRow([ branch2, QStandardItem("test b2") ])
-         
+        
         self.treeview.setModel(self.model)
         self.treeview.setColumnWidth(0, 150)
         # self.setCentralWidget(self.treeview)
@@ -65,3 +64,16 @@ class AnnotationListWindow(QWidget):
         id_index = selected_index.sibling(selected_index.row(), 1)
         print(self.model.data( selected_index ))
         print(self.model.data( id_index ))
+
+    def add_annotation_group(self, new_annotation_group):
+        # Create color icon
+        pixmap = QPixmap(100, 100)
+        pixmap.fill(QColor(new_annotation_group.color))
+        color_icon = QIcon(pixmap)
+        # Add new group to tree
+        self.model.appendRow([QStandardItem(color_icon, new_annotation_group.name), QStandardItem(new_annotation_group.id)])
+
+    def delete_annotation_group(self, annotation_group_id):
+        matching_item_list = self.model.findItems(annotation_group_id, Qt.MatchFixedString, 1)
+        if matching_item_list:
+            self.model.removeRows( matching_item_list[0].row(), 1, self.treeview.rootIndex() )

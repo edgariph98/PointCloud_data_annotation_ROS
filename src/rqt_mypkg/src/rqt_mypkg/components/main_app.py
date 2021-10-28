@@ -2,7 +2,7 @@ import os
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QSizePolicy, QFrame
+from python_qt_binding.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QSizePolicy, QFrame
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import pyqtSlot
 import rviz 
@@ -74,6 +74,11 @@ class MainApp(QMainWindow):
         annotations_layout = QVBoxLayout()
         self.annotation_list = AnnotationListWindow(self.annotation_groups)
         self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
+        
+        new_annotation_button = QPushButton('Test')
+        new_annotation_button.clicked.connect(self.new_annotation)
+        annotations_layout.addWidget(new_annotation_button)
+
         annotations_layout.addWidget(self.annotation_list)
         annotations_layout.addWidget(self.annotation_details)
 
@@ -133,7 +138,9 @@ class MainApp(QMainWindow):
         new_annotation_group = AnnotationGroup(group_name, color)
         self.annotation_groups.append(new_annotation_group)
         # Update drop down options in annotation details window
-        self.annotation_details.add_annotation_group(new_annotation_group)
+        self.annotation_details.add_annotation_group(group_name)
+        # Add annotation group to annotation list window
+        self.annotation_list.add_annotation_group(new_annotation_group)
 
     def launch_delete_annotation_group_popup(self):
         self.dialog = DeleteAnnotationGroupPopup(self.annotation_groups)
@@ -142,10 +149,16 @@ class MainApp(QMainWindow):
 
     @pyqtSlot(str, name='delete_annotation_group')
     def get_delete_annotation_group_data(self, group_name):
+        group_id = ''
         for group in self.annotation_groups:
             if group.name == group_name:
+                group_id = group.id
                 self.annotation_groups.remove(group)
                 break
+        # Update drop down options in annotation details window
+        self.annotation_details.delete_annotation_group(group_name)
+        # Remove annotation group from annotation list window
+        self.annotation_list.delete_annotation_group(group_id)
 
     # opening a rosbag and loading frames
     def load_rosbag(self, path, topic_name):
@@ -171,6 +184,8 @@ class MainApp(QMainWindow):
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames)
 
+    def new_annotation(self):
+        self.annotation_details.prompt_new_annotation()
 
 #import numpy as np
 

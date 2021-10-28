@@ -1,6 +1,7 @@
 from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox, QLineEdit, QComboBox
 from python_qt_binding.QtGui import QDoubleValidator, QPainter
 from python_qt_binding.QtCore import Qt
+from auxiliary_functions import deleteItemsOfLayout
 
 class AnnotationDetailsWindow(QWidget):
 
@@ -72,6 +73,28 @@ class AnnotationDetailsWindow(QWidget):
         self.layout.setSpacing(10)
         self.setLayout(self.layout)
 
+    def add_annotation_group(self, new_annotation_group_name):
+        self.group_dropdown.addItem(new_annotation_group_name)
 
-    def add_annotation_group(self, new_annotation_group):
-        self.group_dropdown.addItem(new_annotation_group.name)
+    def delete_annotation_group(self, annotation_group_name):
+        index = self.group_dropdown.findText(annotation_group_name)
+        self.group_dropdown.removeItem(index)
+
+    def prompt_new_annotation(self):
+        # Create cancel and create button and add to layout
+        cancel_button = QPushButton('Cancel')
+        create_button = QPushButton('Create')
+        cancel_button.clicked.connect(self.cancel_new_annotation)
+        create_button.clicked.connect(self.create_new_annotation)
+        self.new_annotation_button_layout = QHBoxLayout()
+        self.new_annotation_button_layout.addWidget(cancel_button)
+        self.new_annotation_button_layout.addWidget(create_button)
+        self.layout.addLayout(self.new_annotation_button_layout)
+
+    def cancel_new_annotation(self):
+        deleteItemsOfLayout(self.new_annotation_button_layout)
+        return
+
+    def create_new_annotation(self):
+        deleteItemsOfLayout(self.new_annotation_button_layout)
+        return
