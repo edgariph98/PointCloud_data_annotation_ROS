@@ -34,7 +34,7 @@
 #include <pcl/filters/crop_box.h>
 #include <pcl/common/angles.h>
 
-namespace SelectingPointsPlugin
+namespace rqt_mypkg
 {
 SelectedPointsPublisher::SelectedPointsPublisher()
 {
@@ -382,4 +382,4 @@ int SelectedPointsPublisher::_publishAccumulatedPoints()
 } // end namespace rviz_plugin_selected_points_topic
 
 #include <pluginlib/class_list_macros.h>
-PLUGINLIB_EXPORT_CLASS( SelectingPointsPlugin::SelectedPointsPublisher, rviz::Tool )
+PLUGINLIB_EXPORT_CLASS( rqt_mypkg::SelectedPointsPublisher, rviz::Tool )

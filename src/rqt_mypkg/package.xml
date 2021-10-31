@@ -52,17 +52,36 @@
   <build_depend>rospy</build_depend>
   <build_depend>rqt_gui</build_depend>
   <build_depend>rqt_gui_py</build_depend>
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>rviz</build_depend> 
+  <build_depend>pcl</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>pcl_conversions</build_depend>
+
+
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>rqt_gui</build_export_depend>
   <build_export_depend>rqt_gui_py</build_export_depend>
+
+
   <exec_depend>rospy</exec_depend>
   <exec_depend>rqt_gui</exec_depend>
   <exec_depend>rqt_gui_py</exec_depend>
+  <exec_depend>pcl</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>pcl_conversions</exec_depend>
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>rviz</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
     <rqt_gui plugin="${prefix}/plugin.xml"/>
+    <!-- Needed for rviz plugin -->
+      <rosdoc config="${prefix}/rosdoc.yaml"/>
+    <rviz plugin="${prefix}/plugin_description.xml"/>
   </export>
 </package>

@@ -96,7 +96,7 @@ Visualization Manager:
   Tools:
     - Class: rviz/Interact
       Hide Inactive Objects: true
-    - Class: SelectingPointsPlugin/SelectedPointsPublisher
+    - Class: rqt_mypkg/SelectedPointsPublisher
   Value: true
   Views:
     Current:

@@ -66,7 +66,7 @@
 
 #include <pcl/filters/extract_indices.h>
 
-namespace SelectingPointsPlugin
+namespace rqt_mypkg
 {
 
 class SelectedPointsPublisher;
