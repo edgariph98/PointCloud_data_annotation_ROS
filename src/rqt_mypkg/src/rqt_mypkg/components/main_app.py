@@ -8,14 +8,12 @@ from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import pyqtSlot
 import rviz 
 from std_msgs.msg import ColorRGBA
-from classes import Frame
-from classes import AnnotationGroup
+from classes import Frame, Annotator
 import rosbag
 from load_rosbag_popup import LoadRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
 from delete_annotation_group_popup import DeleteAnnotationGroupPopup
 from .BagPlayer import BagPlayer
-from .Annotator import Annotator
 
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
@@ -178,7 +176,7 @@ class MainApp(QMainWindow):
             self.central_widget_layout.addWidget(self.gTextBox)
             self.central_widget_layout.addWidget(self.bLabel)
             self.central_widget_layout.addWidget(self.bTextBox)
-            
+            # adding group name label and textbox
             self.central_widget_layout.addWidget(self.groupNameLabel)
             self.central_widget_layout.addWidget(self.groupNameTextBox)
             
@@ -187,6 +185,7 @@ class MainApp(QMainWindow):
             self.central_widget_layout.addWidget(addAnnotationButton)
             self.central_widget.setLayout(self.central_widget_layout)
             self.setCentralWidget(self.central_widget)
+            ######################################################################
 
     def createAnnotation(self,label,groupName,r,g,b):
         color = ColorRGBA()

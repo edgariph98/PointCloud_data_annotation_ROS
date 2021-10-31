@@ -4,9 +4,8 @@ from interactive_markers.interactive_marker_server import *
 from rospy.core import loginfo
 from visualization_msgs.msg import *
 from sensor_msgs.msg import PointCloud2
-from classes import AnnotationGroup
 from python_qt_binding.QtWidgets import QWidget
-from classes import Annotation
+from .annotation import Annotation
 import rviz
 import time
 from std_msgs.msg import ColorRGBA
