@@ -7,6 +7,7 @@
 #include "rviz/properties/vector_property.h"
 #include "rviz/view_manager.h"
 #include "rviz/view_controller.h"
+#include "rviz/tool_manager.h"
 #include "OGRE/OgreCamera.h"
 
 
@@ -204,6 +205,7 @@ int SelectedPointsPublisher::processMouseEvent( rviz::ViewportMouseEvent& event 
 int SelectedPointsPublisher::_processSelectedAreaAndFindPoints()
 {
     rviz::SelectionManager* sel_manager = context_->getSelectionManager();
+    sel_manager->removeHighlight();
     rviz::M_Picked selection = sel_manager->getSelection();
     rviz::PropertyTreeModel *model = sel_manager->getPropertyModel();
     int num_points = model->rowCount();
@@ -355,7 +357,9 @@ int SelectedPointsPublisher::_processSelectedAreaAndFindPoints()
     marker.color.a = 0.5;
     marker.lifetime = ros::Duration();
     bb_marker_pub_.publish(marker);
-
+    \
+    rviz::ToolManager* toolManager = context_->getToolManager();
+    toolManager->setCurrentTool(toolManager->getTool(0));
     return 0;
 }
 
