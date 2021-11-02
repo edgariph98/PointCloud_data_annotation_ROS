@@ -2,11 +2,16 @@ from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayou
 from python_qt_binding.QtGui import QDoubleValidator, QPainter
 from python_qt_binding.QtCore import Qt
 from auxiliary_functions import deleteItemsOfLayout
+from PyQt5.QtCore import pyqtSignal
 
 class AnnotationDetailsWindow(QWidget):
 
+    created = pyqtSignal(str, str, name='delete_annotation_group')
+
     def __init__(self, annotation_groups):
         QWidget.__init__(self)
+        # Set state flags
+        self.prompt_new_annotation_flag = False
         # Title
         self.title = QLabel('Annotation Details')
         self.title.setProperty('class', 'widgetTitle')
@@ -22,6 +27,7 @@ class AnnotationDetailsWindow(QWidget):
         self.group_dropdown.addItem(None)
         for group in annotation_groups:
             self.group_dropdown.addItem(group.name)
+        self.group_dropdown.currentIndexChanged.connect(self.group_dropdown_change)
         self.onlyDouble = QDoubleValidator()
         # X input
         self.x_min = QLineEdit()
@@ -73,6 +79,12 @@ class AnnotationDetailsWindow(QWidget):
         self.layout.setSpacing(10)
         self.setLayout(self.layout)
 
+    def group_dropdown_change(self):
+        if self.prompt_new_annotation_flag and not self.group_dropdown.currentText():
+            self.create_button.setEnabled(False)
+        elif self.prompt_new_annotation_flag:
+            self.create_button.setEnabled(True)
+
     def add_annotation_group(self, new_annotation_group_name):
         self.group_dropdown.addItem(new_annotation_group_name)
 
@@ -81,20 +93,35 @@ class AnnotationDetailsWindow(QWidget):
         self.group_dropdown.removeItem(index)
 
     def prompt_new_annotation(self):
-        # Create cancel and create button and add to layout
+        self.prompt_new_annotation_flag = True
+        # Create the cancel and create buttons and connect to functions
         cancel_button = QPushButton('Cancel')
-        create_button = QPushButton('Create')
+        self.create_button = QPushButton('Create')
         cancel_button.clicked.connect(self.cancel_new_annotation)
-        create_button.clicked.connect(self.create_new_annotation)
+        self.create_button.clicked.connect(self.create_new_annotation)
+        # clear displays
+        self.clear_fields()
+        # Add buttons to layout
         self.new_annotation_button_layout = QHBoxLayout()
         self.new_annotation_button_layout.addWidget(cancel_button)
-        self.new_annotation_button_layout.addWidget(create_button)
+        self.new_annotation_button_layout.addWidget(self.create_button)
         self.layout.addLayout(self.new_annotation_button_layout)
 
     def cancel_new_annotation(self):
         deleteItemsOfLayout(self.new_annotation_button_layout)
+        self.prompt_new_annotation_flag = False
         return
 
     def create_new_annotation(self):
         deleteItemsOfLayout(self.new_annotation_button_layout)
+        self.prompt_new_annotation_flag = False
+        self.created.emit( self.label_input.text(), self.group_dropdown.currentText() )
         return
+
+    def clear_fields(self):
+        self.label_input.clear()
+        # Always trigger group_dropdown_change for consistent behavior
+        if self.group_dropdown.currentIndex() == 0:
+            self.group_dropdown_change()
+        else:
+            self.group_dropdown.setCurrentIndex(0)

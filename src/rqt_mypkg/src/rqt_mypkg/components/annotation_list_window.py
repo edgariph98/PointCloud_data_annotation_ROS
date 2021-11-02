@@ -77,3 +77,6 @@ class AnnotationListWindow(QWidget):
         matching_item_list = self.model.findItems(annotation_group_id, Qt.MatchFixedString, 1)
         if matching_item_list:
             self.model.removeRows( matching_item_list[0].row(), 1, self.treeview.rootIndex() )
+
+    def add_anotation(self, annotation):
+        pass

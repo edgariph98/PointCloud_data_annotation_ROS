@@ -56,24 +56,15 @@ class MainApp(QMainWindow):
             style = qss.read()
         self.setStyleSheet(style)
 
-        # Set MainWindow's central widget
-        # central_widget_layout = QVBoxLayout()
-        # central_widget_layout.addWidget(self.rviz_frame)
-        # central_widget_layout.addWidget(self.bagPlayer)
-        # central_widget = QWidget()
-        # central_widget.setLayout(central_widget_layout)
-        # self.setCentralWidget(central_widget)
-
-
-        central_widget_layout = QHBoxLayout()
-
         rviz_display_layout = QVBoxLayout()
         rviz_display_layout.addWidget(self.rviz_frame)
         rviz_display_layout.addWidget(self.bagPlayer)
 
+        # Create annotation details and list windows and add them to vertical layout
         annotations_layout = QVBoxLayout()
         self.annotation_list = AnnotationListWindow(self.annotation_groups)
         self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
+        self.annotation_details.created.connect(self.get_confirmed_new_annotation)
         
         new_annotation_button = QPushButton('Test')
         new_annotation_button.clicked.connect(self.new_annotation)
@@ -82,6 +73,8 @@ class MainApp(QMainWindow):
         annotations_layout.addWidget(self.annotation_list)
         annotations_layout.addWidget(self.annotation_details)
 
+        # Set MainWindow's central widget
+        central_widget_layout = QHBoxLayout()
         central_widget_layout.addLayout(rviz_display_layout, 4)
         central_widget_layout.addLayout(annotations_layout, 1)
         central_widget = QWidget()
@@ -187,35 +180,9 @@ class MainApp(QMainWindow):
     def new_annotation(self):
         self.annotation_details.prompt_new_annotation()
 
-#import numpy as np
-
-# def inside_test(points , cube3d):
-#     """
-#     cube3d  =  numpy array of the shape (8,3) with coordinates in the clockwise order. first the bottom plane is considered then the top one.
-#     points = array of points with shape (N, 3).
-
-#     Returns the indices of the points array which are outside the cube3d
-#     """
-#     b1,b2,b3,b4,t1,t2,t3,t4 = cube3d
-
-#     dir1 = (t1-b1)
-#     size1 = np.linalg.norm(dir1)
-#     dir1 = dir1 / size1
-
-#     dir2 = (b2-b1)
-#     size2 = np.linalg.norm(dir2)
-#     dir2 = dir2 / size2
-
-#     dir3 = (b4-b1)
-#     size3 = np.linalg.norm(dir3)
-#     dir3 = dir3 / size3
-
-#     cube3d_center = (b1 + t3)/2.0
-
-#     dir_vec = points - cube3d_center
-
-#     res1 = np.where( (np.absolute(np.dot(dir_vec, dir1)) * 2) > size1 )[0]
-#     res2 = np.where( (np.absolute(np.dot(dir_vec, dir2)) * 2) > size2 )[0]
-#     res3 = np.where( (np.absolute(np.dot(dir_vec, dir3)) * 2) > size3 )[0]
-
-#     return list( set().union(res1, res2, res3) )
+    @pyqtSlot(str, str, name='create_annotation_group')
+    def get_confirmed_new_annotation(self, label, group_name):
+        print(label)
+        print(group_name)
+        
+        self.annotation_list.new_annotation(group_name, label, id)

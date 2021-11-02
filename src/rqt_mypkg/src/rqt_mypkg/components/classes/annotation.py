@@ -1,8 +1,10 @@
-class Annotation:
+import uuid
 
-    def __init__(self, _label, _group, _x_min, _x_max, _y_min, _y_max, _z_min, _z_max):
+class Annotation:
+    def __init__(self, _label, _group_id, _x_min, _x_max, _y_min, _y_max, _z_min, _z_max):
+        self.id = str(uuid.uuid4())
         self.label = _label
-        self.group = _group
+        self.group_id = _group_id
         self.x_min = _x_min
         self.x_max = _x_max
         self.y_min = _y_min

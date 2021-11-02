@@ -1,4 +1,3 @@
-
 def deleteItemsOfLayout(layout):
      if layout is not None:
          while layout.count():
