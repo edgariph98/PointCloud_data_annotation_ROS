@@ -1,13 +1,14 @@
 import os
+import uuid
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QMainWindow, qApp, QAction, QMessageBox
+from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QMainWindow, qApp, QAction, QMessageBox, QPushButton, QLineEdit,QLabel
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import pyqtSlot
 import rviz 
-from classes import Frame
-from classes import AnnotationGroup
+from std_msgs.msg import ColorRGBA
+from classes import Frame, Annotator
 import rosbag
 from load_rosbag_popup import LoadRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
@@ -24,7 +25,7 @@ class MainApp(QMainWindow):
         self.annotation_groups = []
         # rosbag object
         self.bag = None
-
+    
         # Load in styling for GUI
         style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
         with open(style_path, 'r') as qss:
@@ -41,21 +42,25 @@ class MainApp(QMainWindow):
         filePath = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'vizualization_frame.config.rviz')
         reader.readFile( config, filePath)
         self.rviz_frame.load( config )
+        # this removes the RVIZ fram menu bar
+        self.rviz_frame.setMenuBar( None )
               
         # Create bag player
         self.bagPlayer = BagPlayer('/rvizdata')
 
+        # Annotator
+        self.annotator = None
         # Create menubar
         self.create_top_menubar()
 
         # Set MainWindow's central widget
-        central_widget_layout = QVBoxLayout()
-        central_widget_layout.addWidget(self.rviz_frame)
-        central_widget_layout.addWidget(self.bagPlayer)
-        central_widget = QWidget()
-        central_widget.setLayout(central_widget_layout)
+        self.central_widget_layout = QVBoxLayout()
+        self.central_widget_layout.addWidget(self.rviz_frame)
+        self.central_widget_layout.addWidget(self.bagPlayer)
+        self.central_widget = QWidget()
+        self.central_widget.setLayout(self.central_widget_layout)
         # central_widget.setStyleSheet(self.style)
-        self.setCentralWidget(central_widget)
+        self.setCentralWidget(self.central_widget)
 
     def create_top_menubar(self):
         # self.statusBar()
@@ -140,4 +145,52 @@ class MainApp(QMainWindow):
                 self.frames[index] = frame
                 index += 1
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.bagPlayer.updateBag(topic_name, self.bag, self.frames)
+            self.annotator  = Annotator(self.rviz_frame,self.frames)
+            self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
+
+            # testing Annotator
+            ###########################################################
+            color = ColorRGBA()
+            color.r = 0.5
+            color.g = 0.8
+            color.b = 0.1
+            color.a = 0.3
+            # color boxes
+            self.rLabel = QLabel("R")
+            self.rTextBox = QLineEdit()
+            self.gLabel = QLabel("G")
+            self.gTextBox = QLineEdit()
+            self.bLabel = QLabel("B")
+            self.bTextBox = QLineEdit()
+
+            self.groupNameLabel  = QLabel("Group Name")
+            self.groupNameTextBox = QLineEdit()
+            self.annotationLabel = QLabel("Label")
+            self.annotationTextBox = QLineEdit()
+            addAnnotationButton = QPushButton("add annotation")
+            addAnnotationButton.clicked.connect(lambda: self.createAnnotation(self.annotationTextBox.text(),self.groupNameTextBox.text(), self.rTextBox.text(),self.gTextBox.text(),self.bTextBox.text()))
+            # adding color boxes for input
+            self.central_widget_layout.addWidget(self.rLabel)
+            self.central_widget_layout.addWidget(self.rTextBox)
+            self.central_widget_layout.addWidget(self.gLabel)
+            self.central_widget_layout.addWidget(self.gTextBox)
+            self.central_widget_layout.addWidget(self.bLabel)
+            self.central_widget_layout.addWidget(self.bTextBox)
+            # adding group name label and textbox
+            self.central_widget_layout.addWidget(self.groupNameLabel)
+            self.central_widget_layout.addWidget(self.groupNameTextBox)
+            
+            self.central_widget_layout.addWidget(self.annotationLabel)
+            self.central_widget_layout.addWidget(self.annotationTextBox)
+            self.central_widget_layout.addWidget(addAnnotationButton)
+            self.central_widget.setLayout(self.central_widget_layout)
+            self.setCentralWidget(self.central_widget)
+            ######################################################################
+
+    def createAnnotation(self,label,groupName,r,g,b):
+        color = ColorRGBA()
+        color.r = float(r)
+        color.g = float(g)
+        color.b = float(b)
+        color.a = 0.3
+        self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)

@@ -1,3 +1,4 @@
+from pickle import NONE
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QPushButton, QSlider, QHBoxLayout
 from python_qt_binding.QtCore import Qt
@@ -18,7 +19,7 @@ class BagPlayer(QWidget):
         self.frames = []
         self.pointCloudTopic = None
         self.currentFrame = -1
-
+        self.annotator = None
         # ui components references
         self.slider = None
         self.nextButton = None
@@ -31,10 +32,11 @@ class BagPlayer(QWidget):
         self.setUpPublisher(rvizTopic)
 
     # updates a bag with the given bag and frames
-    def updateBag(self, _pointCloudTopic,_bag, _frames):
+    def updateBag(self, _pointCloudTopic,_bag, _frames, _annotator):
         self.pointCloudTopic = _pointCloudTopic
         self.bag = _bag
         self.frames = _frames
+        self.annotator = _annotator
         self.currentFrame = 0
         self.slider.setMaximum(len(self.frames)-1)
         rospy.loginfo(
@@ -74,7 +76,7 @@ class BagPlayer(QWidget):
             self.bagPublisher = rospy.Publisher(
                 topic, PointCloud2, queue_size=1)
         except Exception as error:
-            rospy.logerr(error)
+            rospy.logerr("unable to set publisher for rosbag player because: {}".format(error))
 
     # plays the next frame in the bag and sets the slider on that index
     def playPrev(self):
@@ -99,7 +101,7 @@ class BagPlayer(QWidget):
         self.bagPublisher.publish(publishingMSG)
         rospy.loginfo("Current Frame {}, timestamp: {}".format(
             frameNumber, frameTimeStamp))
-
+        self.annotator.loadAnnotations(frameNumber)
     # publishes a frame anytime the slider changes
     def sliderOnChange(self, newFrame):
         self.currentFrame = newFrame
