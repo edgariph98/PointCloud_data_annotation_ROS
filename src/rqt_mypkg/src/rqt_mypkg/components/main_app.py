@@ -1,13 +1,16 @@
 import os
+from sys import modules
+import uuid
+from interactive_markers.interactive_marker_server import MarkerContext
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QSizePolicy, QFrame
+from python_qt_binding.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QLineEdit
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtCore import pyqtSlot
 import rviz 
-from classes import Frame
-from classes import AnnotationGroup
+from std_msgs.msg import ColorRGBA
+from classes import Frame, Annotator, AnnotationGroup
 import rosbag
 from load_rosbag_popup import LoadRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
@@ -26,7 +29,7 @@ class MainApp(QMainWindow):
         self.annotation_groups = []
         # rosbag object
         self.bag = None
-
+    
         # Load in styling for GUI
         style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
         with open(style_path, 'r') as qss:
@@ -43,10 +46,16 @@ class MainApp(QMainWindow):
         filePath = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'vizualization_frame.config.rviz')
         reader.readFile( config, filePath)
         self.rviz_frame.load( config )
+        # this removes the RVIZ fram menu bar
+        self.rviz_frame.setMenuBar( None )
               
         # Create bag player
         self.bagPlayer = BagPlayer('/rvizdata')
 
+        # Annotator
+        self.annotator = None
+        # Create add annotation button
+        self.add_annotation_button = QPushButton("Add annotation")
         # Create menubar
         self.create_top_menubar()
 
@@ -59,6 +68,7 @@ class MainApp(QMainWindow):
         rviz_display_layout = QVBoxLayout()
         rviz_display_layout.addWidget(self.rviz_frame)
         rviz_display_layout.addWidget(self.bagPlayer)
+        rviz_display_layout.addWidget(self.add_annotation_button)
 
         # Create annotation details and list windows and add them to vertical layout
         annotations_layout = QVBoxLayout()
@@ -175,7 +185,48 @@ class MainApp(QMainWindow):
                 self.frames[index] = frame
                 index += 1
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.bagPlayer.updateBag(topic_name, self.bag, self.frames)
+            self.annotator  = Annotator(self.rviz_frame,self.frames)
+            self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
+
+            self.add_annotation_button.clicked.connect(self.annotator.toggleAddingMode)
+            # testing Annotator
+            ###########################################################
+            # color = ColorRGBA()
+            # color.r = 0.5
+            # color.g = 0.8
+            # color.b = 0.1
+            # color.a = 0.3
+            # # color boxes
+            # self.rLabel = QLabel("R")
+            # self.rTextBox = QLineEdit()
+            # self.gLabel = QLabel("G")
+            # self.gTextBox = QLineEdit()
+            # self.bLabel = QLabel("B")
+            # self.bTextBox = QLineEdit()
+
+            # self.groupNameLabel  = QLabel("Group Name")
+            # self.groupNameTextBox = QLineEdit()
+            # self.annotationLabel = QLabel("Label")
+            # self.annotationTextBox = QLineEdit()
+
+            
+            # # adding color boxes for input
+            # self.central_widget_layout.addWidget(self.rLabel)
+            # self.central_widget_layout.addWidget(self.rTextBox)
+            # self.central_widget_layout.addWidget(self.gLabel)
+            # self.central_widget_layout.addWidget(self.gTextBox)
+            # self.central_widget_layout.addWidget(self.bLabel)
+            # self.central_widget_layout.addWidget(self.bTextBox)
+            # # adding group name label and textbox
+            # self.central_widget_layout.addWidget(self.groupNameLabel)
+            # self.central_widget_layout.addWidget(self.groupNameTextBox)
+            
+            # self.central_widget_layout.addWidget(self.annotationLabel)
+            # self.central_widget_layout.addWidget(self.annotationTextBox)
+            # self.central_widget_layout.addWidget(addAnnotationButton)
+            # self.central_widget.setLayout(self.central_widget_layout)
+            # self.setCentralWidget(self.central_widget)
+            ######################################################################
 
     def new_annotation(self):
         self.annotation_details.prompt_new_annotation()
@@ -185,4 +236,22 @@ class MainApp(QMainWindow):
         print(label)
         print(group_name)
         
-        self.annotation_list.new_annotation(group_name, label, id)
+        #self.annotation_list.new_annotation(group_name, label, id)            
+
+    # def createAnnotation(self,label,groupName,r,g,b):
+    #     color = ColorRGBA()
+    #     color.r = float(r)
+    #     color.g = float(g)
+    #     color.b = float(b)
+    #     color.a = 0.3
+    #     self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)
+
+
+
+# Annotator will use a temp_marker. It will be None when not in creation mode. Otherwise it will hold
+# the marker pending approval
+
+# 1. Create Marker with rviz window
+# 2. Send that marker to details window (needed for xmin max calcs)
+# 3a. confirm: send full annotation back to Annotator. Send list necessary info
+# 3b. call annotator function in main app that deletes the marker that is pending a full annotation 
