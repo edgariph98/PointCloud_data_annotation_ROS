@@ -10,7 +10,8 @@ class Annotation:
                  _label,
                  _group,
                  _marker,
-                 _color
+                 _color,
+                 _pc2_msg
                  ):
         # TODO
         # self.label = _label
@@ -29,6 +30,8 @@ class Annotation:
         # the annotation group
         self.group = _group
         self.intMarker = self._createInteractiveMarker(_marker, _color)
+        # the pointcloud 2 data catptured by the annotation
+        self.captured_point_cloud = _pc2_msg
 
     
     # creates the marker box with all the shapes with given id

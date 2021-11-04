@@ -17,10 +17,12 @@ class Annotator():
         try:
             # this publisher gets the bounding  bounding Box marker of the selection
             self.boundingBoxSubscriber = rospy.Subscriber(
-                "/visualization_marker", Marker, self._getSelection)
+                "/visualization_marker", Marker, self._get_marker_selection)
             # this publisher notifies the selection tool, that the annotation has been created
             self.annotationCreatedPublisher = rospy.Publisher(
                 "/annotation_created", Marker, queue_size=1)
+            # this subscriber gets the point cloud data selected by the user
+            self.annotationPC2Subscriber = rospy.Subscriber("/rviz_selected_points",PointCloud2,self._get_pc2_selection)
         except Exception as e:
             self._printErrorMSG("{}".format(e))
         # unique ids of all annotations across all frames
@@ -36,6 +38,7 @@ class Annotator():
         self.currentAnnotations = self.framesAnnotations[self.currentFrame]
         # Marker, containing the current bounding Box selected from the user
         self.current_bounding_box_selection = None
+        self.current_point_cloud2_selection = None
 
     # sets the mode annotation to adding and creates and accessible object containing the information needed to created the Annotation
     # returns
@@ -52,10 +55,10 @@ class Annotator():
                 "Annotation with id \"{}\" already exists, provide a unique id".format(id))
         else:
             # the user has made a selection
-            if self.current_bounding_box_selection:
+            if self.current_bounding_box_selection and self.current_point_cloud2_selection:
                 # creating new annotation
                 newAnnotation = Annotation(
-                    id, labelName, groupName, self.current_bounding_box_selection, color)
+                    id, labelName, groupName, self.current_bounding_box_selection, color,self.current_point_cloud2_selection)
                 # adding new annotation to the current set of annotations
                 self.currentAnnotations.append(newAnnotation)
                 # inserting the marker of the new annotation in the server
@@ -66,8 +69,9 @@ class Annotator():
                 self.annotationCreatedPublisher.publish(
                     self.current_bounding_box_selection)
                 self.current_bounding_box_selection = None
-                self._printLogMSG("New Annotation Created id :{}, Label: {}, Group: {}, Color Values R: {}, G: {}, B: {}, A: {}".format(
-                    id, labelName, groupName, color.r, color.g, color.b, color.a))
+                totalPoints  = self.current_point_cloud2_selection.row_step / self.current_point_cloud2_selection.point_step
+                self._printLogMSG("New Annotation Created id :{}, Label: {}, Group: {}, total PC2 points: {}, Color Values R: {}, G: {}, B: {}, A: {}".format(
+                    id, labelName, groupName,totalPoints, color.r, color.g, color.b, color.a))
                 # proper creation of annotation
                 success = True
             # no selection has been made by the user
@@ -75,9 +79,14 @@ class Annotator():
                 self._printErrorMSG("No selection has been made")
 
             return success
-
+    # callback that gets the selected points from the selection tool
+    def _get_pc2_selection(self,pc2_msg):
+        self.current_point_cloud2_selection = pc2_msg
+        totalPoints = pc2_msg.row_step / pc2_msg.point_step
+        self._printLogMSG("New point cloud selection added, total points: {}".format(totalPoints))
     # this is the callback used when the selection tool is done gathering the point cloud data from the window
-    def _getSelection(self,
+    # it gets the bounding box of the selected points 
+    def _get_marker_selection(self,
                       boundingBoxMarker  # Marker
                       ):
         # we only use the bounding box marker if its not being deleted
