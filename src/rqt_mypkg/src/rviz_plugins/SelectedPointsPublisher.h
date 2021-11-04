@@ -63,7 +63,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <sensor_msgs/PointCloud2.h>
-
+#include <visualization_msgs/Marker.h>
+#include "rviz/selection/forwards.h"
 #include <pcl/filters/extract_indices.h>
 
 namespace rqt_mypkg
@@ -93,6 +94,7 @@ public Q_SLOTS:
   void updateTopic();
 
   void PointCloudsCallback(const sensor_msgs::PointCloud2ConstPtr &pc_msg);
+  void annotationCreatedCallback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker);
 
 protected:
 
@@ -105,11 +107,14 @@ protected:
   ros::Publisher bb_marker_pub_;
   ros::Subscriber pc_subs_;
 
+  ros::Subscriber annotatotion_created_subscriber;
+
   std::string tf_frame_;
   std::string rviz_cloud_topic_;
   std::string real_cloud_topic_;
   std::string subs_cloud_topic_;
   std::string bb_marker_topic_;
+  std::string annotation_created_topic;
   bool selecting_;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr current_pc_;

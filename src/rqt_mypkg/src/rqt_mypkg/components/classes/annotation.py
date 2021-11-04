@@ -49,13 +49,16 @@ class Annotation:
         container_control = InteractiveMarkerControl()
         container_control.always_visible = True
         container_control.markers = [marker]
+        #move marker along x axis control
         move_x_control = InteractiveMarkerControl()
         move_x_control.name = "move_x"
         move_x_control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         move_x_control.always_visible = True
         move_x_control.orientation.w = marker.pose.orientation.w
         move_x_control.orientation.x = marker.pose.orientation.x + marker.scale.x
-        return [container_control, move_x_control]
+        # controls to add
+        controls = [container_control]
+        return controls
 
     # returns label of the  annotation 
     def getName(self):
