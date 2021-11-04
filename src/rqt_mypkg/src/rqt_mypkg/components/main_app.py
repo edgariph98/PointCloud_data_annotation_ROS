@@ -145,7 +145,7 @@ class MainApp(QMainWindow):
                 self.frames[index] = frame
                 index += 1
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.annotator  = Annotator(self.rviz_frame,self.frames)
+            self.annotator  = Annotator(self.frames)
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
 
             # testing Annotator
