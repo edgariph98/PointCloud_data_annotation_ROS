@@ -107,6 +107,7 @@ protected:
   ros::Publisher bb_marker_pub_;
   ros::Subscriber pc_subs_;
 
+  // subscriber used to update selection once annotation has been created
   ros::Subscriber annotatotion_created_subscriber;
 
   std::string tf_frame_;

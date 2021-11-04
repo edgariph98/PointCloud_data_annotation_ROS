@@ -83,7 +83,9 @@ void SelectedPointsPublisher::PointCloudsCallback(const sensor_msgs::PointCloud2
     // Convert ROS PC message into a pcl point cloud
     pcl::fromROSMsg(*pc_msg, *this->current_pc_);
 }
+// cleaning selection and default bounding box marker from the screen
 void SelectedPointsPublisher::annotationCreatedCallback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker){
+    // removing selection
     rviz::SelectionManager* sel_manager = context_->getSelectionManager();
     rviz::M_Picked selection = sel_manager->getSelection();
     sel_manager->removeSelection(selection);
@@ -97,7 +99,6 @@ void SelectedPointsPublisher::annotationCreatedCallback(const visualization_msgs
     marker.action = visualization_msgs::Marker::DELETE;
     marker.lifetime = ros::Duration();
     bb_marker_pub_.publish(marker);
-
 }
 
 int SelectedPointsPublisher::processKeyEvent( QKeyEvent* event, rviz::RenderPanel* panel )
