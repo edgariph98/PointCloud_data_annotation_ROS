@@ -37,7 +37,7 @@ class Annotation:
             self.id, self.group, self.label)
         intMarker.header.frame_id = marker.header.frame_id
         intMarker.pose = marker.pose
-        marker.color = ColorRGBA(.5, .5, .5, .5)
+        marker.color = ColorRGBA(.5, .5, .5, .6)
         intMarker.controls.extend(
             self._createInteractiveMarkerControls(marker))
         return intMarker

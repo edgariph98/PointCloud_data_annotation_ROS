@@ -3,10 +3,11 @@ from python_qt_binding.QtGui import QDoubleValidator, QPainter
 from python_qt_binding.QtCore import Qt
 from auxiliary_functions import deleteItemsOfLayout
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSlot
 
 class AnnotationDetailsWindow(QWidget):
 
-    created = pyqtSignal(str, str, name='delete_annotation_group')
+    confirmed_annotation = pyqtSignal(str, str, name='confirmed_annotation')
 
     def __init__(self, annotation_groups):
         QWidget.__init__(self)
@@ -115,7 +116,7 @@ class AnnotationDetailsWindow(QWidget):
     def create_new_annotation(self):
         deleteItemsOfLayout(self.new_annotation_button_layout)
         self.prompt_new_annotation_flag = False
-        self.created.emit( self.label_input.text(), self.group_dropdown.currentText() )
+        self.confirmed_annotation.emit( self.label_input.text(), self.group_dropdown.currentText() )
         return
 
     def clear_fields(self):
@@ -125,3 +126,7 @@ class AnnotationDetailsWindow(QWidget):
             self.group_dropdown_change()
         else:
             self.group_dropdown.setCurrentIndex(0)
+
+    @pyqtSlot(str, name='get_pending_annotation')
+    def get_pending_annotation(self, test_str):
+        print(test_str)

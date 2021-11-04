@@ -74,7 +74,7 @@ class MainApp(QMainWindow):
         annotations_layout = QVBoxLayout()
         self.annotation_list = AnnotationListWindow(self.annotation_groups)
         self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
-        self.annotation_details.created.connect(self.get_confirmed_new_annotation)
+        self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
         
         new_annotation_button = QPushButton('Test')
         new_annotation_button.clicked.connect(self.new_annotation)
@@ -185,9 +185,9 @@ class MainApp(QMainWindow):
                 self.frames[index] = frame
                 index += 1
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.annotator  = Annotator(self.rviz_frame,self.frames)
+            self.annotator  = Annotator(self.rviz_frame,self.frames)            
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
-
+            self.annotator.pending_annotation.connect(self.annotation_details.get_pending_annotation)
             self.add_annotation_button.clicked.connect(self.annotator.toggleAddingMode)
             # testing Annotator
             ###########################################################
@@ -231,8 +231,8 @@ class MainApp(QMainWindow):
     def new_annotation(self):
         self.annotation_details.prompt_new_annotation()
 
-    @pyqtSlot(str, str, name='create_annotation_group')
-    def get_confirmed_new_annotation(self, label, group_name):
+    @pyqtSlot(str, str, name='confirm_annotation')
+    def get_confirmed_annotation(self, label, group_name):
         print(label)
         print(group_name)
         
