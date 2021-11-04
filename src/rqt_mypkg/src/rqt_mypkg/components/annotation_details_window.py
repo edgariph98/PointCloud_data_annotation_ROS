@@ -127,6 +127,7 @@ class AnnotationDetailsWindow(QWidget):
         else:
             self.group_dropdown.setCurrentIndex(0)
 
-    @pyqtSlot(str, name='get_pending_annotation')
-    def get_pending_annotation(self, test_str):
-        print(test_str)
+    @pyqtSlot(float, float, float, float, float, float, name='get_pending_annotation_marker')
+    def get_pending_annotation_maker(self, scale_x, scale_y, scale_z, position_x, position_y, position_z):
+        print(scale_x)
+        print(position_x)

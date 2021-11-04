@@ -8,6 +8,7 @@
 #include "rviz/view_manager.h"
 #include "rviz/view_controller.h"
 #include "rviz/tool_manager.h"
+
 #include "OGRE/OgreCamera.h"
 
 
@@ -52,7 +53,9 @@ void SelectedPointsPublisher::updateTopic()
     real_cloud_topic_ = std::string("/real_selected_points");
     subs_cloud_topic_ = std::string("/camera/depth_registered/points");
     bb_marker_topic_ = std::string("visualization_marker");
+    annotation_created_topic = std::string("/annotation_created");
 
+    annotatotion_created_subscriber = nh_.subscribe(annotation_created_topic.c_str(),1,&SelectedPointsPublisher::annotationCreatedCallback,this);
     rviz_selected_pub_ = nh_.advertise<sensor_msgs::PointCloud2>( rviz_cloud_topic_.c_str(), 1 );
     real_selected_pub_ = nh_.advertise<sensor_msgs::PointCloud2>( real_cloud_topic_.c_str(), 1 );
     partial_pc_pub_ = nh_.advertise<sensor_msgs::PointCloud2>( subs_cloud_topic_.c_str(), 1 );
@@ -79,6 +82,23 @@ void SelectedPointsPublisher::PointCloudsCallback(const sensor_msgs::PointCloud2
     }
     // Convert ROS PC message into a pcl point cloud
     pcl::fromROSMsg(*pc_msg, *this->current_pc_);
+}
+// cleaning selection and default bounding box marker from the screen
+void SelectedPointsPublisher::annotationCreatedCallback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker){
+    // removing selection
+    rviz::SelectionManager* sel_manager = context_->getSelectionManager();
+    rviz::M_Picked selection = sel_manager->getSelection();
+    sel_manager->removeSelection(selection);
+    visualization_msgs::Marker marker;
+    // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+    marker.header.frame_id = context_->getFixedFrame().toStdString().c_str();
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "basic_shapes";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::CUBE;
+    marker.action = visualization_msgs::Marker::DELETE;
+    marker.lifetime = ros::Duration();
+    bb_marker_pub_.publish(marker);
 }
 
 int SelectedPointsPublisher::processKeyEvent( QKeyEvent* event, rviz::RenderPanel* panel )
@@ -348,18 +368,18 @@ int SelectedPointsPublisher::_processSelectedAreaAndFindPoints()
     marker.pose.orientation.y = qfinal.y();
     marker.pose.orientation.z = qfinal.z();
     marker.pose.orientation.w = qfinal.w();
-    marker.scale.x = max_pt.x - min_pt.x + 0.5;
-    marker.scale.y = max_pt.y - min_pt.y + 0.5;
-    marker.scale.z = max_pt.z - min_pt.z + 0.5;
+    marker.scale.x = max_pt.x - min_pt.x + 0.16;
+    marker.scale.y = max_pt.y - min_pt.y + 0.16;
+    marker.scale.z = max_pt.z - min_pt.z + 0.16;
     marker.color.r = 0.0f;
     marker.color.g = 1.0f;
     marker.color.b = 0.0f;
     marker.color.a = 0.5;
     marker.lifetime = ros::Duration();
     bb_marker_pub_.publish(marker);
-    \
-    rviz::ToolManager* toolManager = context_->getToolManager();
-    toolManager->setCurrentTool(toolManager->getTool(0));
+    // changing tool
+    // rviz::ToolManager* toolManager = context_->getToolManager();
+    // toolManager->setCurrentTool(toolManager->getTool(0));
     return 0;
 }
 
