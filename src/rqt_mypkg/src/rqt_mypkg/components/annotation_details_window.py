@@ -157,7 +157,7 @@ class AnnotationDetailsWindow(QWidget):
         self.z_position.setText('')
 
     @pyqtSlot(float, float, float, float, float, float, name='get_pending_annotation_marker')
-    def get_pending_annotation_maker(self, x_scale, y_scale, z_scale, x_position, y_position, z_position):
+    def get_pending_annotation_marker(self, x_scale, y_scale, z_scale, x_position, y_position, z_position):
         self.new_pending_annotation_marker = True
         self.pending_annotation['x_scale'] = x_scale
         self.pending_annotation['y_scale'] = y_scale
@@ -168,6 +168,16 @@ class AnnotationDetailsWindow(QWidget):
 
         # If the points signal has also been received, enter new annotation mode
         if not self.new_pending_annotation_points:
+            self.new_pending_annotation_marker = False
+            self.new_pending_annotation_points = False
+            self.prompt_new_annotation()
+    
+    @pyqtSlot(name='get_pending_annotation_points')
+    def get_pending_annotation_points(self):
+        self.new_pending_annotation_points = True
+
+        # If the points signal has also been received, enter new annotation mode
+        if self.new_pending_annotation_marker:
             self.new_pending_annotation_marker = False
             self.new_pending_annotation_points = False
             self.prompt_new_annotation()

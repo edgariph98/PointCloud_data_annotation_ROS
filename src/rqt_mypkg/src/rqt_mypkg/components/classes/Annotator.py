@@ -14,7 +14,7 @@ from ..auxiliary_functions import get_annotation_group_by_id
 class Annotator(QObject):
 
     pending_annotation_marker = pyqtSignal(float, float, float, float, float, float, name='get_pending_annotation_marker')
-    pending_annotation_points = pyqtSignal(str, name='get_pending_annotation_points')
+    pending_annotation_points = pyqtSignal(name='get_pending_annotation_points')
     rviz_cancelled_new_annotation = pyqtSignal(name='rviz_cancelled_new_annotation')
 
     def __init__(self, _frames, _annotation_groups):
@@ -45,7 +45,7 @@ class Annotator(QObject):
     # returns
     def createAnnotation(
         self,
-        groupName,  # str
+        group_id,  # str
         labelName,  # str
         id,         # str
         color       # ColorRGBA
@@ -59,7 +59,7 @@ class Annotator(QObject):
             if self.current_bounding_box_selection:
                 # creating new annotation
                 newAnnotation = Annotation(
-                    id, labelName, groupName, self.current_bounding_box_selection, color)
+                    id, labelName, group_id, self.current_bounding_box_selection, color)
                 # adding new annotation to the current set of annotations
                 self.currentAnnotations.append(newAnnotation)
                 # inserting the marker of the new annotation in the server
@@ -70,8 +70,8 @@ class Annotator(QObject):
                 self.annotationCreatedPublisher.publish(
                     self.current_bounding_box_selection)
                 self.current_bounding_box_selection = None
-                self._printLogMSG("New Annotation Created id :{}, Label: {}, Group: {}, Color Values R: {}, G: {}, B: {}, A: {}".format(
-                    id, labelName, groupName, color.r, color.g, color.b, color.a))
+                self._printLogMSG("New Annotation Created id :{}, Label: {}, Group id: {}, Color Values R: {}, G: {}, B: {}, A: {}".format(
+                    id, labelName, group_id, color.r, color.g, color.b, color.a))
                 # proper creation of annotation
                 success = True
             # no selection has been made by the user
@@ -136,15 +136,22 @@ class Annotator(QObject):
     def _printLogMSG(self, msg):
         rospy.loginfo("[Annotator] " + msg)
 
-
     @pyqtSlot(str, str, str, name='confirm_annotation')
     def get_confirmed_annotation(self, label, annotation_id, group_id):
         # Edgar:
         # I can't send a color using slots/signals. 
         # Instead the Annotator now has access to the annotation_group list and can use the group_id
-        group_name = get_annotation_group_by_id(self.annotation_groups, group_id).name
+        group = get_annotation_group_by_id(self.annotation_groups, group_id)
         self._printLogMSG("Recieved from annotation_details_window id :{}, Label: {}, Group id: {}, Group Name: {}".format(
-            annotation_id, label, group_id, group_name))
+            annotation_id, label, group_id, group.name))
+        # Todo
+        # This commented line is throwing errors, I think you will know more than me.
+        # self.createAnnotation(group.id, label, id, group.color)
+
+        # Also the color object stored in the annotation group (set when creating the annotation group),
+        # will likely need to be converted into the color object that you want. 
+        # This can be done in the annotation_group class constructor. The color object stored by an annotation group should
+        # be the object that will work for you
     
     @pyqtSlot(name='cancelled_new_annotation')
     def cancelled_new_annotation(self):
@@ -155,7 +162,8 @@ class Annotator(QObject):
         self.rviz_cancelled_new_annotation.emit()
 
     # Todo
-    # execute 'self.rviz_cancelled_new_annotation.emit()' when the user deletes a marker using rviz window
+    # 1. execute 'self.rviz_cancelled_new_annotation.emit()' when the user deletes a marker using rviz window
+    # 2. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
     
     
 

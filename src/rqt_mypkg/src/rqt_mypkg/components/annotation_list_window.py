@@ -16,20 +16,28 @@ class AnnotationListWindow(QWidget):
         for group in annotation_groups:
             rootNode.appendRow([QStandardItem(group.name), None])
 
+        pixmap = QPixmap(100, 100)
+        pixmap.fill(QColor(Qt.green))
+        color_icon = QIcon(pixmap)
 
-        # branch1 = QStandardItem("Branch 1")
-        # # branch1.setForeground(QBrush(QColor('white')))
-        # branch1.appendRow([QStandardItem("Child A"), QStandardItem("test A")])
-        # childnode = QStandardItem("Child B")
-        # branch1.appendRow([childnode, QStandardItem("test B")])
+        pixmap2 = QPixmap(100, 100)
+        pixmap2.fill(QColor(Qt.yellow))
+        color_icon2 = QIcon(pixmap2)
+
+        branch1 = QStandardItem(color_icon, "Annotation Group 1")
+        # branch1.setForeground(QBrush(QColor('white')))
+        branch1.appendRow([QStandardItem("Annotation A"), QStandardItem("test A")])
+        childnode = QStandardItem("Annotation B")
+        branch1.appendRow([childnode, QStandardItem("test B")])
          
-        # branch2 = QStandardItem("Branch 2")
-        # branch2.appendRow([QStandardItem("Child C"), QStandardItem("test C")])
-        # branch2.appendRow([QStandardItem("Child D"), QStandardItem("test D")])
+        branch2 = QStandardItem(color_icon2, "Annotaiton Group 2")
+        branch2.appendRow([QStandardItem("Annotation C"), QStandardItem("test C")])
+        branch2.appendRow([QStandardItem("Annotation D"), QStandardItem("test D")])
          
-        # rootNode.appendRow([ branch1, QStandardItem("test b1") ])
-        # rootNode.appendRow([ branch2, QStandardItem("test b2") ])
-        
+        rootNode.appendRow([ branch1, QStandardItem("test b1") ])
+        rootNode.appendRow([ branch2, QStandardItem("test b2") ])
+
+
         self.treeview.setModel(self.model)
         self.treeview.setColumnWidth(0, 150)
         # self.setCentralWidget(self.treeview)

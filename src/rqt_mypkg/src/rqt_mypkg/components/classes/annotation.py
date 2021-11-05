@@ -6,7 +6,7 @@ from std_msgs.msg import ColorRGBA
 class Annotation:
     def __init__(self,                
                  _label,
-                 _group,
+                 _group_id,
                  _marker,
                  _color,
                  _id = None
@@ -25,8 +25,8 @@ class Annotation:
         self.id = _id if _id else str(uuid.uuid4())
         # label for the annotation
         self.label = _label
-        # the annotation group
-        self.group = _group
+        # the annotation group id
+        self.group_id = _group_id
         self.intMarker = self._createInteractiveMarker(_marker, _color)
 
     
