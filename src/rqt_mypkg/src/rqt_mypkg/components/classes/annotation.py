@@ -4,11 +4,12 @@ from std_msgs.msg import ColorRGBA
 from std_msgs.msg import ColorRGBA
 
 class Annotation:
-    def __init__(self,
+    def __init__(self,                
                  _label,
                  _group,
                  _marker,
-                 _color
+                 _color,
+                 _id = None
                  ):
         # TODO
         # self.label = _label
@@ -21,7 +22,7 @@ class Annotation:
         # self.z_max = _z_max
 
         # Unique id for an annotation, then put that id into field for PC2 points
-        self.id = str(uuid.uuid4())
+        self.id = _id if _id else str(uuid.uuid4())
         # label for the annotation
         self.label = _label
         # the annotation group

@@ -8,14 +8,16 @@ from .annotation import Annotation
 import rviz
 import time
 from std_msgs.msg import ColorRGBA
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
+from ..auxiliary_functions import get_annotation_group_by_id
 
 class Annotator(QObject):
 
     pending_annotation_marker = pyqtSignal(float, float, float, float, float, float, name='get_pending_annotation_marker')
     pending_annotation_points = pyqtSignal(str, name='get_pending_annotation_points')
+    rviz_cancelled_new_annotation = pyqtSignal(name='rviz_cancelled_new_annotation')
 
-    def __init__(self, _frames):
+    def __init__(self, _frames, _annotation_groups):
         super(Annotator, self).__init__()
         # publisher and subscriber to interact with the selected points publisher node
         try:
@@ -31,6 +33,7 @@ class Annotator(QObject):
         self.annotationIds = set()
         # create an interactive marker server on the topic namespace simple_marker that publishes shapes
         self.server = InteractiveMarkerServer("simple_marker")
+        self.annotation_groups = _annotation_groups
         self.frames = _frames
         self.currentFrame = 0
         # current set of annotations -> List[ Annotation ]
@@ -90,9 +93,10 @@ class Annotator(QObject):
             self._printLogMSG("New Bounding box selection, Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
                 scale.x, scale.y, scale.z, position.x, position.y, position.z))
             # Send signal with marker details
-            print(type(position))
-            print(type(scale.x))
-            self.pending_annotation.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
+            self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
+        else: 
+            pass
+            # send cancel signal to detials
             
 
     # TODO
@@ -131,3 +135,27 @@ class Annotator(QObject):
 
     def _printLogMSG(self, msg):
         rospy.loginfo("[Annotator] " + msg)
+
+
+    @pyqtSlot(str, str, str, name='confirm_annotation')
+    def get_confirmed_annotation(self, label, annotation_id, group_id):
+        # Edgar:
+        # I can't send a color using slots/signals. 
+        # Instead the Annotator now has access to the annotation_group list and can use the group_id
+        group_name = get_annotation_group_by_id(self.annotation_groups, group_id).name
+        self._printLogMSG("Recieved from annotation_details_window id :{}, Label: {}, Group id: {}, Group Name: {}".format(
+            annotation_id, label, group_id, group_name))
+    
+    @pyqtSlot(name='cancelled_new_annotation')
+    def cancelled_new_annotation(self):
+        #  Todo
+        # remove the marker
+        # reset reviz window state to whatever it should be
+        print("Annotation just got cancelled")
+        self.rviz_cancelled_new_annotation.emit()
+
+    # Todo
+    # execute 'self.rviz_cancelled_new_annotation.emit()' when the user deletes a marker using rviz window
+    
+    
+

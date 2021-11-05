@@ -54,8 +54,6 @@ class MainApp(QMainWindow):
 
         # Annotator
         self.annotator = None
-        # Create add annotation button
-        self.add_annotation_button = QPushButton("Add annotation")
         # Create menubar
         self.create_top_menubar()
 
@@ -68,18 +66,11 @@ class MainApp(QMainWindow):
         rviz_display_layout = QVBoxLayout()
         rviz_display_layout.addWidget(self.rviz_frame)
         rviz_display_layout.addWidget(self.bagPlayer)
-        rviz_display_layout.addWidget(self.add_annotation_button)
 
         # Create annotation details and list windows and add them to vertical layout
         annotations_layout = QVBoxLayout()
         self.annotation_list = AnnotationListWindow(self.annotation_groups)
         self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
-        self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
-        
-        new_annotation_button = QPushButton('Test')
-        new_annotation_button.clicked.connect(self.new_annotation)
-        annotations_layout.addWidget(new_annotation_button)
-
         annotations_layout.addWidget(self.annotation_list)
         annotations_layout.addWidget(self.annotation_details)
 
@@ -184,76 +175,12 @@ class MainApp(QMainWindow):
                 frame = Frame(t)
                 self.frames[index] = frame
                 index += 1
+            # Create Annotator with list of frames and annotation groups
+            self.annotator  = Annotator(self.frames, self.annotation_groups)
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.annotator  = Annotator(self.frames)
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
+
+            # Connect signals and slots between Annotator and annotation_details_window
             self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
-            
-            # self.add_annotation_button.clicked.connect(self.annotator.toggleAddingMode)
-
-            # testing Annotator
-            ###########################################################
-            # color = ColorRGBA()
-            # color.r = 0.5
-            # color.g = 0.8
-            # color.b = 0.1
-            # color.a = 0.3
-            # # color boxes
-            # self.rLabel = QLabel("R")
-            # self.rTextBox = QLineEdit()
-            # self.gLabel = QLabel("G")
-            # self.gTextBox = QLineEdit()
-            # self.bLabel = QLabel("B")
-            # self.bTextBox = QLineEdit()
-
-            # self.groupNameLabel  = QLabel("Group Name")
-            # self.groupNameTextBox = QLineEdit()
-            # self.annotationLabel = QLabel("Label")
-            # self.annotationTextBox = QLineEdit()
-
-            
-            # # adding color boxes for input
-            # self.central_widget_layout.addWidget(self.rLabel)
-            # self.central_widget_layout.addWidget(self.rTextBox)
-            # self.central_widget_layout.addWidget(self.gLabel)
-            # self.central_widget_layout.addWidget(self.gTextBox)
-            # self.central_widget_layout.addWidget(self.bLabel)
-            # self.central_widget_layout.addWidget(self.bTextBox)
-            # # adding group name label and textbox
-            # self.central_widget_layout.addWidget(self.groupNameLabel)
-            # self.central_widget_layout.addWidget(self.groupNameTextBox)
-            
-            # self.central_widget_layout.addWidget(self.annotationLabel)
-            # self.central_widget_layout.addWidget(self.annotationTextBox)
-            # self.central_widget_layout.addWidget(addAnnotationButton)
-            # self.central_widget.setLayout(self.central_widget_layout)
-            # self.setCentralWidget(self.central_widget)
-            ######################################################################
-
-    def new_annotation(self):
-        self.annotation_details.prompt_new_annotation()
-
-    @pyqtSlot(str, str, name='confirm_annotation')
-    def get_confirmed_annotation(self, label, group_name):
-        print(label)
-        print(group_name)
-        
-        #self.annotation_list.new_annotation(group_name, label, id)            
-
-    # def createAnnotation(self,label,groupName,r,g,b):
-    #     color = ColorRGBA()
-    #     color.r = float(r)
-    #     color.g = float(g)
-    #     color.b = float(b)
-    #     color.a = 0.3
-    #     self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)
-
-
-
-# Annotator will use a temp_marker. It will be None when not in creation mode. Otherwise it will hold
-# the marker pending approval
-
-# 1. Create Marker with rviz window
-# 2. Send that marker to details window (needed for xmin max calcs)
-# 3a. confirm: send full annotation back to Annotator. Send list necessary info
-# 3b. call annotator function in main app that deletes the marker that is pending a full annotation 
+            self.annotation_details.confirmed_annotation.connect(self.annotator.get_confirmed_annotation)
+            self.annotation_details.cancelled_new_annotation.connect(self.annotator.cancelled_new_annotation)
