@@ -8,6 +8,8 @@ from .annotation import Annotation
 import rviz
 import time
 from std_msgs.msg import ColorRGBA
+from annotation_msgs.msg import Annotation as Annotation_msg
+
 
 
 class Annotator():
