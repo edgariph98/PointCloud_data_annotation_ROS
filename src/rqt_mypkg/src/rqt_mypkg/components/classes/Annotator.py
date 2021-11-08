@@ -9,12 +9,16 @@ import rviz
 import time
 from std_msgs.msg import ColorRGBA
 from annotation_msgs.msg import Annotation as Annotation_msg
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
+class Annotator(QObject):
 
-
-class Annotator():
+    pending_annotation_marker = pyqtSignal(float, float, float, float, float, float, name='get_pending_annotation_marker')
+    pending_annotation_points = pyqtSignal(name='get_pending_annotation_points') 
+    rviz_cancelled_new_annotation = pyqtSignal(name='rviz_cancelled_new_annotation')
 
     def __init__(self, _frames):
+        super(Annotator, self).__init__()
         # publisher and subscriber to interact with the selected points publisher node
         try:
             # this publisher gets the bounding  bounding Box marker of the selection
@@ -32,12 +36,9 @@ class Annotator():
         # create an interactive marker server on the topic namespace simple_marker that publishes shapes
         self.server = InteractiveMarkerServer("simple_marker")
         self.frames = _frames
-        # each empty list is list annotation corresponding to the frame being showed
-        self.framesAnnotations = [[] for i in range(
-            len(self.frames))]  # List [ List [Annotation] ]
         self.currentFrame = 0
         # current set of annotations -> List[ Annotation ]
-        self.currentAnnotations = self.framesAnnotations[self.currentFrame]
+        self.currentAnnotations = self.frames[self.currentFrame].annotations
         # Marker, containing the current bounding Box selected from the user
         self.current_bounding_box_selection = None
         self.current_point_cloud2_selection = None
@@ -46,7 +47,7 @@ class Annotator():
     # returns
     def createAnnotation(
         self,
-        groupName,  # str
+        group_id,   # str
         labelName,  # str
         id,         # str
         color       # ColorRGBA
@@ -60,20 +61,19 @@ class Annotator():
             if self.current_bounding_box_selection and self.current_point_cloud2_selection:
                 # creating new annotation
                 newAnnotation = Annotation(
-                    id, labelName, groupName, self.current_bounding_box_selection, color,self.current_point_cloud2_selection)
+                    id, labelName, group_id, self.current_bounding_box_selection, color)
                 # adding new annotation to the current set of annotations
                 self.currentAnnotations.append(newAnnotation)
                 # inserting the marker of the new annotation in the server
                 self.server.insert(
                     newAnnotation.getInteractiveMarker(), self.processFeedback)
                 self.server.applyChanges()
-                # resetting the selection to None
-                self.annotationCreatedPublisher.publish(
-                    self.current_bounding_box_selection)
+                # removing  selection from rviz
+                self.remove_selection()
                 self.current_bounding_box_selection = None
                 totalPoints  = self.current_point_cloud2_selection.row_step / self.current_point_cloud2_selection.point_step
                 self._printLogMSG("New Annotation Created id :{}, Label: {}, Group: {}, total PC2 points: {}, Color Values R: {}, G: {}, B: {}, A: {}".format(
-                    id, labelName, groupName,totalPoints, color.r, color.g, color.b, color.a))
+                    id, labelName, group_id,totalPoints, color.r, color.g, color.b, color.a))
                 # proper creation of annotation
                 success = True
             # no selection has been made by the user
@@ -99,6 +99,12 @@ class Annotator():
             self.current_bounding_box_selection = boundingBoxMarker
             self._printLogMSG("New Bounding box selection, Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
                 scale.x, scale.y, scale.z, position.x, position.y, position.z))
+            # Send signal with marker details
+            self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
+        else: 
+            
+            self.rviz_cancelled_new_annotation.emit()
+            
 
     # TODO
     # processing feedback for each marker
@@ -121,7 +127,7 @@ class Annotator():
         self._printLogMSG(
             "Current Frame [{}], Loading Annotations".format(frameIndex))
         self.currentFrame = frameIndex
-        self.currentAnnotations = self.framesAnnotations[self.currentFrame]
+        self.currentAnnotations = self.frames[self.currentFrame].annotations
         for annotation in self.currentAnnotations:
             self.server.insert(
                 annotation.getInteractiveMarker(), self.processFeedback)
@@ -136,3 +142,17 @@ class Annotator():
 
     def _printLogMSG(self, msg):
         rospy.loginfo("[Annotator] " + msg)
+
+
+    # remvoing selection from rviz 
+    def remove_selection(self):
+        emptyMarker = Marker()
+        # when this publisher sends a message, it removes selection from rviz
+        self.annotationCreatedPublisher.publish(emptyMarker)
+
+
+    # Todo
+    # 1. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
+
+    
+

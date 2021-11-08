@@ -1,34 +1,24 @@
-import rospy
+import uuid
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, Marker
 from std_msgs.msg import ColorRGBA
-
+from std_msgs.msg import ColorRGBA
 
 class Annotation:
-
     def __init__(self,
-                 _id,
+                 _id,               
                  _label,
-                 _group,
+                 _group_id,
                  _marker,
                  _color,
                  _pc2_msg
                  ):
-        # TODO
-        # self.label = _label
-        # self.group = _group
-        # self.x_min = _x_min
-        # self.x_max = _x_max
-        # self.y_min = _y_min
-        # self.y_max = _y_max
-        # self.z_min = _z_min
-        # self.z_max = _z_max
 
-        # Unique id for an annotation, then put that id into field for PC2 points
+        # Unique id for an annotation
         self.id = _id
         # label for the annotation
         self.label = _label
-        # the annotation group
-        self.group = _group
+        # the annotation group id
+        self.group_id = _group_id
         self.intMarker = self._createInteractiveMarker(_marker, _color)
         # the pointcloud 2 data catptured by the annotation
         self.captured_point_cloud = _pc2_msg
@@ -39,7 +29,7 @@ class Annotation:
         intMarker = InteractiveMarker()
         intMarker.name = self.id
         intMarker.description = "id:{},\nGroup: {},\nLabel: {},\n".format(
-            self.id, self.group, self.label)
+            self.id, self.group_id, self.label)
         intMarker.header.frame_id = marker.header.frame_id
         intMarker.pose = marker.pose
         marker.color = color

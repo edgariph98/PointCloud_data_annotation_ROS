@@ -392,3 +392,26 @@ QSlider::sub-page:horizontal {
 QSlider::sub-page:vertical {
     background: #04b97f;
 }
+
+QWidget[Test=true] {
+	background: red;
+}
+
+QLineEdit[Test=true] {
+	border: 2px solid #8f8f91;
+	border-radius: 6px;
+	background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+							stop: 0 #f6f7fa, stop: 1 #dadbde);
+	min-width: 80px;
+}
+
+QLabel.widgetTitle {
+	font-size: 18px;
+	color: #8f8f91;
+	text-align: center;
+	border: 1px solid #8f8f91;
+}
+
+QTreeView {
+	color: #8f8f91;
+}
