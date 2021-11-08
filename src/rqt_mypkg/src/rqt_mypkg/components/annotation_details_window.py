@@ -184,4 +184,8 @@ class AnnotationDetailsWindow(QWidget):
 
     @pyqtSlot(name='rviz_cancelled_new_annotation')
     def rviz_cancelled_new_annotation(self):
-        self.cancel_new_annotation()
+        self.clear_fields()
+        deleteItemsOfLayout(self.new_annotation_button_layout)
+        self.prompt_new_annotation_flag = False
+        # Trevor by caling this it emits a signal back to the annotator getting the annotator into infitinite loop canceling annotations
+        # self.cancel_new_annotation()

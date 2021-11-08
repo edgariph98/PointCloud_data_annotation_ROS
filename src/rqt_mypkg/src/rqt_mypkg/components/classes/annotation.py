@@ -4,25 +4,16 @@ from std_msgs.msg import ColorRGBA
 from std_msgs.msg import ColorRGBA
 
 class Annotation:
-    def __init__(self,                
+    def __init__(self,
+                 _id,               
                  _label,
                  _group_id,
                  _marker,
                  _color,
-                 _id = None
                  ):
-        # TODO
-        # self.label = _label
-        # self.group = _group
-        # self.x_min = _x_min
-        # self.x_max = _x_max
-        # self.y_min = _y_min
-        # self.y_max = _y_max
-        # self.z_min = _z_min
-        # self.z_max = _z_max
 
-        # Unique id for an annotation, then put that id into field for PC2 points
-        self.id = _id if _id else str(uuid.uuid4())
+        # Unique id for an annotation
+        self.id = _id
         # label for the annotation
         self.label = _label
         # the annotation group id
@@ -35,10 +26,10 @@ class Annotation:
         intMarker = InteractiveMarker()
         intMarker.name = self.id
         intMarker.description = "id:{},\nGroup: {},\nLabel: {},\n".format(
-            self.id, self.group, self.label)
+            self.id, self.group_id, self.label)
         intMarker.header.frame_id = marker.header.frame_id
         intMarker.pose = marker.pose
-        marker.color = ColorRGBA(.5, .5, .5, .6)
+        marker.color = color
         intMarker.controls.extend(
             self._createInteractiveMarkerControls(marker))
         return intMarker

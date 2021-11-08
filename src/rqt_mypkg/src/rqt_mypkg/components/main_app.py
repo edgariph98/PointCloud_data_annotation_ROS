@@ -18,6 +18,7 @@ from delete_annotation_group_popup import DeleteAnnotationGroupPopup
 from annotation_details_window import AnnotationDetailsWindow
 from annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
+from .auxiliary_functions import get_annotation_group_by_id, get_valid_ColorRGBA_MSG
 
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
@@ -176,11 +177,33 @@ class MainApp(QMainWindow):
                 self.frames[index] = frame
                 index += 1
             # Create Annotator with list of frames and annotation groups
-            self.annotator  = Annotator(self.frames, self.annotation_groups)
+            self.annotator  = Annotator(self.frames)
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
 
             # Connect signals and slots between Annotator and annotation_details_window
             self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
-            self.annotation_details.confirmed_annotation.connect(self.annotator.get_confirmed_annotation)
-            self.annotation_details.cancelled_new_annotation.connect(self.annotator.cancelled_new_annotation)
+            self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
+            self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
+            self.annotation_details.cancelled_new_annotation.connect(self.cancelled_new_annotation)
+
+
+    @pyqtSlot(str, str, str, name='confirm_annotation')
+    def get_confirmed_annotation(self, label, annotation_id, group_id):
+        group = get_annotation_group_by_id(self.annotation_groups, group_id)
+        print("Recieved from annotation_details_window id :{}, Label: {}, Group id: {}, Group Name: {}".format(
+            annotation_id, label, group_id, group.name))
+        valid_color = get_valid_ColorRGBA_MSG(group.color)
+        self.annotator.createAnnotation(group_id,label,annotation_id,valid_color)
+
+    @pyqtSlot(name='cancelled_new_annotation')
+    def cancelled_new_annotation(self):
+        #  Todo
+        # remove the marker
+        # reset reviz window state to whatever it should be
+        print("Annotation just got cancelled")
+        self.annotator.remove_selection()
+
+    # Todo
+    # 1. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
+    
