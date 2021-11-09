@@ -32,7 +32,7 @@ class MainApp(QMainWindow):
         self.bag = None
     
         # Load in styling for GUI
-        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
         with open(style_path, 'r') as qss:
             self.style = qss.read()
         self.setStyleSheet(self.style)
@@ -59,7 +59,7 @@ class MainApp(QMainWindow):
         self.create_top_menubar()
 
         # Load in styling for GUI
-        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
         with open(style_path, 'r') as qss:
             style = qss.read()
         self.setStyleSheet(style)

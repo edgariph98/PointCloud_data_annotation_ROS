@@ -42,7 +42,7 @@ class LoadRosbagPopup(QWidget):
         self.cancel_button.clicked.connect(self.close)
 
         # Load in styling for GUI
-        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'MaterialDark.qss')
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
         with open(style_path, 'r') as qss:
             self.style = qss.read()
         self.setStyleSheet(self.style)
