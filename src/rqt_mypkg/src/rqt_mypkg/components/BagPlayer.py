@@ -102,6 +102,7 @@ class BagPlayer(QWidget):
         rospy.loginfo("Current Frame {}, timestamp: {}".format(
             frameNumber, frameTimeStamp))
         self.annotator.loadAnnotations(frameNumber)
+
     # publishes a frame anytime the slider changes
     def sliderOnChange(self, newFrame):
         self.currentFrame = newFrame

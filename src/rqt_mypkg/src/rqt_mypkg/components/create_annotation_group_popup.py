@@ -1,5 +1,7 @@
-from python_qt_binding.QtWidgets import QColorDialog, QWidget, QFormLayout, QHBoxLayout, QPushButton, QLineEdit, QMessageBox
-from PyQt5.QtGui import QColor
+import os
+import rospkg
+from python_qt_binding.QtWidgets import QColorDialog, QLabel, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QMessageBox
+from PyQt5.QtGui import QColor, QFont, QPixmap
 from PyQt5.QtCore import pyqtSignal
 
 class CreateAnnotationGroupPopup(QWidget):
@@ -10,27 +12,55 @@ class CreateAnnotationGroupPopup(QWidget):
         QWidget.__init__(self)
         self.annotation_groups = annotation_groups
         self.color = None
-        self.resize(640, 480)
+        self.resize(500, 250)
+        self.setWindowTitle('Create annotation group')
         self.group_name_edit = QLineEdit()
-        self.color_selector = QPushButton('Color')
+        self.color_selector = QPushButton('Browse colors')
+        self.color_display = QLabel('')
         self.cancel_button = QPushButton('Cancel')
         self.submit_button = QPushButton('Submit')
         self.submit_button.setEnabled(False)
 
-
-        self.setLayout(QFormLayout())
-        self.layout().addRow('Annotation group name', self.group_name_edit)
-        self.layout().addRow('Annotation color', self.color_selector)
-        buttons = QWidget()
-        buttons.setLayout(QHBoxLayout())
-        buttons.layout().addWidget(self.cancel_button)
-        buttons.layout().addWidget(self.submit_button)
-        self.layout().addRow('', buttons)
-
+        # Connect buttons to signals and functions
         self.group_name_edit.textChanged.connect(self.enable_submit)
         self.color_selector.clicked.connect(self.get_color)
         self.submit_button.clicked.connect(self.on_submit)
         self.cancel_button.clicked.connect(self.close)
+
+        # Create color selection row widget
+        color_widget = QWidget()
+        color_widget.setLayout(QHBoxLayout())
+        color_widget.layout().addWidget(self.color_selector)
+        color_widget.layout().addWidget(self.color_display)
+
+        # Create button row widget
+        button_widget = QWidget()
+        button_widget.setLayout(QHBoxLayout())
+        button_widget.layout().addWidget(self.cancel_button)
+        button_widget.layout().addWidget(self.submit_button)
+
+        # Add widgets to main layout
+        layout = QVBoxLayout()
+        layout.setContentsMargins(10, 0, 10, 0)
+        layout.addWidget(QLabel(''))
+        layout.addWidget(QLabel(text='Annotation group name:', font=QFont('Sans', 10)))
+        layout.addWidget(self.group_name_edit)
+        layout.addWidget(QLabel(''))
+        layout.addWidget(QLabel(''))
+        layout.addWidget(QLabel(text='Annotation color:', font=QFont('Sans', 10)))
+        # layout.addWidget(self.color_selector)
+        layout.addWidget(color_widget)
+        layout.addWidget(QLabel(''))
+        layout.addWidget(QLabel(''))
+        layout.addWidget(button_widget)
+        self.setLayout(layout)
+
+
+        # Load in styling for GUI
+        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
+        with open(style_path, 'r') as qss:
+            self.style = qss.read()
+        self.setStyleSheet(self.style)
 
     def enable_submit(self):
         if len(self.group_name_edit.text()) > 0 and self.color != None :
@@ -62,5 +92,10 @@ class CreateAnnotationGroupPopup(QWidget):
         self.close()
 
     def get_color(self):
+        # Get and display the selected color
         self.color = QColorDialog.getColor()
+        pixmap = QPixmap(220, 25)
+        pixmap.fill(self.color)
+        self.color_display.setPixmap(pixmap)
+
         self.enable_submit()

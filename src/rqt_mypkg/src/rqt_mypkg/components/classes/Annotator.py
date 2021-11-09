@@ -100,6 +100,7 @@ class Annotator(QObject):
     def loadAnnotations(self,
                         frameIndex  # int
                         ):
+        self.remove_selection()
         self._clearAnnotations()
         self._printLogMSG(
             "Current Frame [{}], Loading Annotations".format(frameIndex))

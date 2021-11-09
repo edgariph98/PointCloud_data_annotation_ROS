@@ -2,7 +2,7 @@ import os
 import rospy
 import rosbag
 import rospkg
-from python_qt_binding.QtWidgets import QWidget, QFileDialog, QFormLayout, QHBoxLayout, QPushButton, QLabel, QComboBox
+from python_qt_binding.QtWidgets import QWidget, QFileDialog, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QComboBox
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal
 
@@ -12,34 +12,51 @@ class LoadRosbagPopup(QWidget):
 
     def __init__(self):
         QWidget.__init__(self)
-        self.resize(640, 480)
-        # self.topic_edit = QLineEdit()
-        # self.message_b_edit = QLineEdit()
+        self.setWindowTitle('Load rosbag')
+        self.resize(450, 230)
+
+        # Create components
         self.topic_dropdown = QComboBox()
         self.topic_dropdown.setEnabled(False)
         self.path = 'No file chosen'
-        self.path_display = QLabel(
-            text=self.path,
-            font=QFont('Sans', 12)
-        )
-        self.file_button = QPushButton('File')
+        self.path_display = QLabel(text=self.path, font=QFont('Sans', 10))
+        self.file_button = QPushButton('Browse...')
+        self.file_button.setFixedSize(125, 25)
         self.cancel_button = QPushButton('Cancel')
         self.submit_button = QPushButton('Submit')
         self.submit_button.setEnabled(False)
 
-        self.setLayout(QFormLayout())
-        self.layout().addRow(self.file_button, self.path_display)
-        self.layout().addRow('Topic', self.topic_dropdown)
-        buttons = QWidget()
-        buttons.setLayout(QHBoxLayout())
-        # buttons.layout().addWidget(self.file_button)
-        buttons.layout().addWidget(self.cancel_button)
-        buttons.layout().addWidget(self.submit_button)
-        self.layout().addRow('', buttons)
-
+        # Connect buttons to signals and functions
         self.file_button.clicked.connect(self.get_rosbag_filename)
         self.submit_button.clicked.connect(self.on_submit)
         self.cancel_button.clicked.connect(self.close)
+        
+        # Create file select row widget
+        file_widget = QWidget()
+        file_widget.setLayout(QHBoxLayout())
+        file_widget.layout().addWidget(self.file_button)
+        file_widget.layout().addWidget(self.path_display)
+
+        # Create button row widget
+        button_widget = QWidget()
+        button_widget.setLayout(QHBoxLayout())
+        button_widget.layout().addWidget(self.cancel_button)
+        button_widget.layout().addWidget(self.submit_button)
+
+        # Add widgets to main layout
+        self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(10, 0, 10, 0)
+        self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(QLabel(text='Choose file:', font=QFont('Sans', 10)))
+        self.layout.addWidget(file_widget)
+        self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(QLabel(text='Choose topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(self.topic_dropdown)
+        self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(button_widget)
+        self.setLayout(self.layout)
 
         # Load in styling for GUI
         style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')

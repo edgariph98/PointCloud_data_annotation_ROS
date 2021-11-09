@@ -128,11 +128,11 @@ class AnnotationDetailsWindow(QWidget):
         self.y_position.setText( str(round(self.pending_annotation['y_position'], 3)) )
         self.z_position.setText( str(round(self.pending_annotation['z_position'], 3)) )
 
-    def cancel_new_annotation(self, notify_rviz=True):
+    def cancel_new_annotation(self, dont_notify_rviz=False):
         self.clear_fields()
         deleteItemsOfLayout(self.new_annotation_button_layout)
         self.prompt_new_annotation_flag = False
-        if notify_rviz:
+        if not dont_notify_rviz:
             self.cancelled_new_annotation.emit()
 
     def create_new_annotation(self):
@@ -185,4 +185,5 @@ class AnnotationDetailsWindow(QWidget):
     @pyqtSlot(name='rviz_cancelled_new_annotation')
     def rviz_cancelled_new_annotation(self):
         # Reset window without notifying rviz visualization frame
-        self.cancel_new_annotation(False)
+        if self.prompt_new_annotation_flag:
+            self.cancel_new_annotation(True)
