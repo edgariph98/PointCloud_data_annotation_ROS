@@ -98,20 +98,22 @@ public Q_SLOTS:
 protected:
   // grabs the selected points and generates bounding boX marker
   int _processSelectedAreaAndFindPoints();
-
+  // resets selection and removes bounding box marker displaying
+  void removeSelectedPoints();
   ros::NodeHandle nh_;
-  // topic to publish selected points point cloud 2 data
-  ros::Publisher rviz_selected_pub_;
-  // publisher for publushing bounding boX marker
+  // publisher for publushing bounding box marker of selection made
   ros::Publisher bb_marker_pub_;
   // subscriber used to update selection once annotation has been created
   ros::Subscriber annotation_created_subscriber;
+  // publisher for the annotation message selection
+  ros::Publisher annotation_selection_publisher;
 
   std::string tf_frame_;
-  std::string rviz_cloud_topic_;
-
+  // strings for subscribers and puublishers
   std::string bb_marker_topic_;
   std::string annotation_created_topic;
+  std::string annotation_topic;
+
   bool selecting_;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr current_pc_;

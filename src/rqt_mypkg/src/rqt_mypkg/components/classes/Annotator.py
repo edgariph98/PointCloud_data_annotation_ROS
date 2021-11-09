@@ -21,14 +21,12 @@ class Annotator(QObject):
         super(Annotator, self).__init__()
         # publisher and subscriber to interact with the selected points publisher node
         try:
-            # this publisher gets the bounding  bounding Box marker of the selection
-            self.boundingBoxSubscriber = rospy.Subscriber(
-                "/visualization_marker", Marker, self._get_marker_selection)
             # this publisher notifies the selection tool, that the annotation has been created
             self.annotationCreatedPublisher = rospy.Publisher(
-                "/annotation_created", Marker, queue_size=1)
-            # this subscriber gets the point cloud data selected by the user
-            self.annotationPC2Subscriber = rospy.Subscriber("/rviz_selected_points",PointCloud2,self._get_pc2_selection)
+                "/selection/annotation_completed", Marker, queue_size=1)
+
+            # this subscriber of Annotation MSG gets the annotation message from the selected points tool
+            self.annotation_selection_subscriber = rospy.Subscriber("/selection/annotation",Annotation_msg,self._get_annotation_selection)
         except Exception as e:
             self._printErrorMSG("{}".format(e))
         # unique ids of all annotations across all frames
@@ -39,9 +37,8 @@ class Annotator(QObject):
         self.currentFrame = 0
         # current set of annotations -> List[ Annotation ]
         self.currentAnnotations = self.frames[self.currentFrame].annotations
-        # Marker, containing the current bounding Box selected from the user
-        self.current_bounding_box_selection = None
-        self.current_point_cloud2_selection = None
+        # the annotation msg selection sent from rviz whene selecting a set of points 
+        self.selected_annotation = None
 
     # sets the mode annotation to adding and creates and accessible object containing the information needed to created the Annotation
     # returns
@@ -58,10 +55,15 @@ class Annotator(QObject):
                 "Annotation with id \"{}\" already exists, provide a unique id".format(id))
         else:
             # the user has made a selection
-            if self.current_bounding_box_selection and self.current_point_cloud2_selection:
+            if self.selected_annotation:
+                # the annotation objects 
+                annotationSelection  = Annotation_msg()
+                annotationSelection.bounding_box = self.selected_annotation.bounding_box
+                annotationSelection.captured_point_cloud = self.selected_annotation.captured_point_cloud
+                annotationSelection.num_points = self.selected_annotation.num_points
                 # creating new annotation
                 newAnnotation = Annotation(
-                    id, labelName, group_id, self.current_bounding_box_selection, color)
+                    id, labelName, group_id, annotationSelection.bounding_box, color, annotationSelection.captured_point_cloud)
                 # adding new annotation to the current set of annotations
                 self.currentAnnotations.append(newAnnotation)
                 # inserting the marker of the new annotation in the server
@@ -70,10 +72,9 @@ class Annotator(QObject):
                 self.server.applyChanges()
                 # removing  selection from rviz
                 self.remove_selection()
-                self.current_bounding_box_selection = None
-                totalPoints  = self.current_point_cloud2_selection.row_step / self.current_point_cloud2_selection.point_step
+                self.selected_annotation = None
                 self._printLogMSG("New Annotation Created id :{}, Label: {}, Group: {}, total PC2 points: {}, Color Values R: {}, G: {}, B: {}, A: {}".format(
-                    id, labelName, group_id,totalPoints, color.r, color.g, color.b, color.a))
+                    id, labelName, group_id,annotationSelection.num_points, color.r, color.g, color.b, color.a))
                 # proper creation of annotation
                 success = True
             # no selection has been made by the user
@@ -81,31 +82,7 @@ class Annotator(QObject):
                 self._printErrorMSG("No selection has been made")
 
             return success
-    # callback that gets the selected points from the selection tool
-    def _get_pc2_selection(self,pc2_msg):
-        self.current_point_cloud2_selection = pc2_msg
-        totalPoints = pc2_msg.row_step / pc2_msg.point_step
-        self._printLogMSG("New point cloud selection added, total points: {}".format(totalPoints))
-    # this is the callback used when the selection tool is done gathering the point cloud data from the window
-    # it gets the bounding box of the selected points 
-    def _get_marker_selection(self,
-                      boundingBoxMarker  # Marker
-                      ):
-        # we only use the bounding box marker if its not being deleted
-        if not boundingBoxMarker.action == Marker.DELETE:
-            scale = boundingBoxMarker.scale
-            position = boundingBoxMarker.pose.position
-            # setting  the selection from the user to the bounding Box marker
-            self.current_bounding_box_selection = boundingBoxMarker
-            self._printLogMSG("New Bounding box selection, Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
-                scale.x, scale.y, scale.z, position.x, position.y, position.z))
-            # Send signal with marker details
-            self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
-        else: 
             
-            self.rviz_cancelled_new_annotation.emit()
-            
-
     # TODO
     # processing feedback for each marker
 
@@ -150,7 +127,20 @@ class Annotator(QObject):
         # when this publisher sends a message, it removes selection from rviz
         self.annotationCreatedPublisher.publish(emptyMarker)
 
-
+    def _get_annotation_selection(self, selected_annotation):
+        boundingBoxMarker = selected_annotation.bounding_box
+        # we only use the bounding box marker if its not being deleted
+        if not boundingBoxMarker.action == Marker.DELETE:
+            scale = boundingBoxMarker.scale
+            position = boundingBoxMarker.pose.position
+            # setting  the current selected annotation
+            self.selected_annotation = selected_annotation
+            self._printLogMSG("New Annotation selected, Total Points Selected: {}, Bounding Box Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
+                selected_annotation.num_points, scale.x, scale.y, scale.z, position.x, position.y, position.z))
+            # Send signal with marker details
+            self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
+        else:
+            self.rviz_cancelled_new_annotation.emit()
     # Todo
     # 1. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
 
