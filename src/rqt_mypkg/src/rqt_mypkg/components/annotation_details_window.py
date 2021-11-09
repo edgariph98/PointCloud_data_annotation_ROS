@@ -36,7 +36,6 @@ class AnnotationDetailsWindow(QWidget):
         # X plane
         self.x_scale = QLineEdit()
         self.x_scale.setReadOnly(True)
-        self.x_scale.setText('Test')
         self.x_position = QLineEdit()
         self.x_position.setReadOnly(True)
 
@@ -107,20 +106,20 @@ class AnnotationDetailsWindow(QWidget):
         self.group_dropdown.removeItem(index)
 
     def prompt_new_annotation(self):
-
+        if not self.prompt_new_annotation_flag:
+            # Create the cancel and create buttons and connect to functions
+            cancel_button = QPushButton('Cancel')
+            self.create_button = QPushButton('Create')
+            cancel_button.clicked.connect(self.cancel_new_annotation)
+            self.create_button.clicked.connect(self.create_new_annotation)
+            # Add buttons to layout
+            self.new_annotation_button_layout = QHBoxLayout()
+            self.new_annotation_button_layout.addWidget(cancel_button)
+            self.new_annotation_button_layout.addWidget(self.create_button)
+            self.layout.addLayout(self.new_annotation_button_layout)
         self.prompt_new_annotation_flag = True
-        # Create the cancel and create buttons and connect to functions
-        cancel_button = QPushButton('Cancel')
-        self.create_button = QPushButton('Create')
-        cancel_button.clicked.connect(self.cancel_new_annotation)
-        self.create_button.clicked.connect(self.create_new_annotation)
         # clear displays
         self.clear_fields()
-        # Add buttons to layout
-        self.new_annotation_button_layout = QHBoxLayout()
-        self.new_annotation_button_layout.addWidget(cancel_button)
-        self.new_annotation_button_layout.addWidget(self.create_button)
-        self.layout.addLayout(self.new_annotation_button_layout)
         # Set X, Y, Z values
         self.x_scale.setText( str(round(self.pending_annotation['x_scale'], 3)) )
         self.y_scale.setText( str(round(self.pending_annotation['y_scale'], 3)) )
@@ -129,11 +128,12 @@ class AnnotationDetailsWindow(QWidget):
         self.y_position.setText( str(round(self.pending_annotation['y_position'], 3)) )
         self.z_position.setText( str(round(self.pending_annotation['z_position'], 3)) )
 
-    def cancel_new_annotation(self):
+    def cancel_new_annotation(self, notify_rviz=True):
         self.clear_fields()
         deleteItemsOfLayout(self.new_annotation_button_layout)
         self.prompt_new_annotation_flag = False
-        self.cancelled_new_annotation.emit()
+        if notify_rviz:
+            self.cancelled_new_annotation.emit()
 
     def create_new_annotation(self):
         deleteItemsOfLayout(self.new_annotation_button_layout)
@@ -184,8 +184,5 @@ class AnnotationDetailsWindow(QWidget):
 
     @pyqtSlot(name='rviz_cancelled_new_annotation')
     def rviz_cancelled_new_annotation(self):
-        self.clear_fields()
-        deleteItemsOfLayout(self.new_annotation_button_layout)
-        self.prompt_new_annotation_flag = False
-        # Trevor by caling this it emits a signal back to the annotator getting the annotator into infitinite loop canceling annotations
-        # self.cancel_new_annotation()
+        # Reset window without notifying rviz visualization frame
+        self.cancel_new_annotation(False)
