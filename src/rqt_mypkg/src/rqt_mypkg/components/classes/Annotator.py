@@ -127,7 +127,10 @@ class Annotator(QObject):
         # when this publisher sends a message, it removes selection from rviz
         self.annotationCreatedPublisher.publish(emptyMarker)
 
-    def _get_annotation_selection(self, selected_annotation):
+    def _get_annotation_selection(
+        self, 
+        selected_annotation # Annotation_msg
+        ):
         boundingBoxMarker = selected_annotation.bounding_box
         # we only use the bounding box marker if its not being deleted
         if not boundingBoxMarker.action == Marker.DELETE:
@@ -141,8 +144,7 @@ class Annotator(QObject):
             self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
         else:
             self.rviz_cancelled_new_annotation.emit()
-    # Todo
-    # 1. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
+
 
     
 
