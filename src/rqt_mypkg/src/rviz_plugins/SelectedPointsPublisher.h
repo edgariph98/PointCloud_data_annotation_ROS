@@ -63,7 +63,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <sensor_msgs/PointCloud2.h>
-
+#include <visualization_msgs/Marker.h>
+#include "rviz/selection/forwards.h"
 #include <pcl/filters/extract_indices.h>
 
 namespace rqt_mypkg
@@ -88,37 +89,39 @@ public:
 
 public Q_SLOTS:
   /*
-   * Creates the ROS topic
+   * Loads publishers an subscribers
    */
   void updateTopic();
 
-  void PointCloudsCallback(const sensor_msgs::PointCloud2ConstPtr &pc_msg);
+  void annotationCreatedCallback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker);
 
 protected:
-
+  // grabs the selected points and generates bounding boX marker
   int _processSelectedAreaAndFindPoints();
-  int _publishAccumulatedPoints();
+  // resets selection and removes bounding box marker displaying
+  void removeSelectedPoints();
   ros::NodeHandle nh_;
-  ros::Publisher rviz_selected_pub_;
-  ros::Publisher real_selected_pub_;
-  ros::Publisher partial_pc_pub_;
+  // publisher for publushing bounding box marker of selection made
   ros::Publisher bb_marker_pub_;
-  ros::Subscriber pc_subs_;
+  // subscriber used to update selection once annotation has been created
+  ros::Subscriber annotation_created_subscriber;
+  // publisher for the annotation message selection
+  ros::Publisher annotation_selection_publisher;
 
   std::string tf_frame_;
-  std::string rviz_cloud_topic_;
-  std::string real_cloud_topic_;
-  std::string subs_cloud_topic_;
+  // strings for subscribers and puublishers
   std::string bb_marker_topic_;
+  std::string annotation_created_topic;
+  std::string annotation_topic;
+
   bool selecting_;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr current_pc_;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr selected_segment_pc_;
-  pcl::PointCloud<pcl::PointXYZRGB>::Ptr accumulated_segment_pc_;
 
   pcl::ExtractIndices<pcl::PointXYZRGB>::Ptr extract_indices_filter_;
 
-  int num_acc_points_;
+  // selected points
   int num_selected_points_;
 };
 } // end namespace rviz_plugin_selected_points_publisher
