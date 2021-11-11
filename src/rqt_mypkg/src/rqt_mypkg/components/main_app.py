@@ -13,11 +13,13 @@ from std_msgs.msg import ColorRGBA
 from classes import Frame, Annotator, AnnotationGroup
 import rosbag
 from load_rosbag_popup import LoadRosbagPopup
+from export_rosbag_popup import ExportRosbagPopup
 from create_annotation_group_popup import CreateAnnotationGroupPopup
 from delete_annotation_group_popup import DeleteAnnotationGroupPopup
 from annotation_details_window import AnnotationDetailsWindow
 from annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
+from annotation_msgs.msg import frame, annotation, annotation_group
 from .auxiliary_functions import get_annotation_group_by_id, get_valid_ColorRGBA_MSG
 
 # Main App widget to be imported in RQT Plugin
@@ -37,6 +39,8 @@ class MainApp(QMainWindow):
             self.style = qss.read()
         self.setStyleSheet(self.style)
         self.initUI()
+        self.input_path = ''
+        self.input_topic = ''
 
     def initUI(self):
         # Create RVIZ Visualization Frame
@@ -90,6 +94,7 @@ class MainApp(QMainWindow):
         load_rosbag_act = QAction(QIcon('loadfile.png'), 'Load rosbag', self)
         load_rosbag_act.triggered.connect(self.launch_load_rosbag_popup)
         export_rosbag_act = QAction(QIcon('export.png'), 'Export annotations', self)
+        export_rosbag_act.triggered.connect(self.launch_export_rosbag_popup)
         file_menu = menubar.addMenu('File')
         file_menu.addAction(load_rosbag_act)
         file_menu.addAction(export_rosbag_act)
@@ -105,6 +110,11 @@ class MainApp(QMainWindow):
     def launch_load_rosbag_popup(self): 
         self.dialog = LoadRosbagPopup()
         self.dialog.submitted.connect(self.get_load_rosbag_data)
+        self.dialog.show()
+        
+    def launch_export_rosbag_popup(self):
+        self.dialog = ExportRosbagPopup()
+        self.dialog.submitted.connect(self.get_export_rosbag_data)
         self.dialog.show()
 
     @pyqtSlot(str, str, name='load_rosbag')
@@ -122,6 +132,22 @@ class MainApp(QMainWindow):
             if retval == QMessageBox.Cancel:
                 return
         self.load_rosbag(path, topic)
+      
+    @pyqtSlot(str, str, bool, name='export_rosbag')    
+    def get_export_rosbag_data(self, path, topic, lidar):
+    	# If a bag has not already been loaded warn the user
+        if len(self.frames) == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Warning)
+            msg.setText('A rosbag has not already been loaded.')
+            msg.setInformativeText('Exporting without any frames or annotations will not create a rosbag.')
+            msg.setWindowTitle('Warning')
+            # msg.setDetailedText('The details are as follows:')
+            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            retval = msg.exec_()
+            if retval == QMessageBox.Cancel:
+                return
+    	self.export_rosbag(path, topic, lidar)
 
     def launch_create_annotation_group_popup(self):
         self.dialog = CreateAnnotationGroupPopup(self.annotation_groups)
@@ -164,6 +190,8 @@ class MainApp(QMainWindow):
         except:
             rospy.logerr('Unable to open file: %s', path)
         else:
+            self.input_path = path
+            self.input_topic = topic_name
             if topic_name not in self.bag.get_type_and_topic_info()[1].keys():
                 rospy.logerr('Topic \'%s\' not found in rosbag', topic_name)
                 self.bag.close()
@@ -180,8 +208,7 @@ class MainApp(QMainWindow):
             self.annotator  = Annotator(self.frames)
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
-
-            # Connect signals and slots between Annotator and annotation_details_window
+# Connect signals and slots between Annotator and annotation_details_window
             self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
             self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
             self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
@@ -206,4 +233,37 @@ class MainApp(QMainWindow):
 
     # Todo
     # 1. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
-    
+
+    def createAnnotation(self,label,groupName,r,g,b):
+        color = ColorRGBA()
+        color.r = float(r)
+        color.g = float(g)
+        color.b = float(b)
+        color.a = 0.3
+        self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)
+
+    def export_rosbag(self, path, topic_name, lidar):
+        topic_name = str(topic_name)
+        path = str(path)
+        with rosbag.Bag(path, 'w') as outbag:
+        	for f in self.frames:
+			if lidar:
+				#load this frame from input rosbag
+				for topic, msg, t in self.bag.read_messages(topics=[self.input_topic], start_time=f.timestamp, end_time=f.timestamp):
+					outbag.write(topic, msg, t)
+        		msg = self.msg_from_Frame(f)
+        		outbag.write(topic_name, msg, f.timestamp)
+        		
+    def msg_from_Frame(self, _frame):
+    	msg = frame()
+    	msg.id = str(_frame.id)
+    	for a in _frame.annotations:
+		annot = annotation()
+		annot.id = a.id
+		annot.label = a.label
+		annot.group = a.group
+		annot.intMarker = a.intMarker
+		annot.captured_point_cloud = a.captured_point_cloud
+		msg.annotations.append(annot)
+	return msg
+

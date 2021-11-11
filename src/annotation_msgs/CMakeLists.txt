@@ -51,6 +51,9 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   Annotation.msg
+  annotation.msg
+  annotation_group.msg
+  frame.msg
   # Message2.msg
 )
 

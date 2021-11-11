@@ -18,6 +18,10 @@ class LoadRosbagPopup(QWidget):
         # Create components
         self.topic_dropdown = QComboBox()
         self.topic_dropdown.setEnabled(False)
+	self.annot_dropdown = QComboBox()
+        self.annot_dropdown.setEnabled(False)
+	self.group_dropdown = QComboBox()
+        self.group_dropdown.setEnabled(False)
         self.path = 'No file chosen'
         self.path_display = QLabel(text=self.path, font=QFont('Sans', 10))
         self.file_button = QPushButton('Browse...')
@@ -51,8 +55,12 @@ class LoadRosbagPopup(QWidget):
         self.layout.addWidget(file_widget)
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(''))
-        self.layout.addWidget(QLabel(text='Choose topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(QLabel(text='Choose LiDAR topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.topic_dropdown)
+	self.layout.addWidget(QLabel(text='Choose annotation topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(self.annot_dropdown)
+	self.layout.addWidget(QLabel(text='Choose group topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(self.group_dropdown)
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(button_widget)
@@ -84,6 +92,8 @@ class LoadRosbagPopup(QWidget):
                 if 'PointCloud2' in topic[0]:
                     self.topic_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
                     found_PC2_topic = True
+		else:
+		    rospy.loginfo(topic[0])
             # Enable dropdown selector and submit button if PC2 topic found
             if found_PC2_topic:
                 self.topic_dropdown.setEnabled(True)
