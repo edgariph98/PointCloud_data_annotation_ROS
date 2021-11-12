@@ -6,7 +6,7 @@ import rospy
 import rospkg
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QLineEdit
-from PyQt5.QtGui import QIcon, QColor
+from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QFont
 from PyQt5.QtCore import pyqtSlot
 import rviz 
 from std_msgs.msg import ColorRGBA
@@ -32,12 +32,17 @@ class MainApp(QMainWindow):
         self.annotation_groups = []
         # rosbag object
         self.bag = None
-    
+
+        # Change default font
+        font_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'fonts', 'AtkinsonHyperlegible-Regular.ttf')
+        QFontDatabase.addApplicationFont(font_path)
+
         # Load in styling for GUI
         style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
         with open(style_path, 'r') as qss:
             self.style = qss.read()
         self.setStyleSheet(self.style)
+        
         self.initUI()
         self.input_path = ''
         self.input_topic = ''
@@ -61,12 +66,6 @@ class MainApp(QMainWindow):
         self.annotator = None
         # Create menubar
         self.create_top_menubar()
-
-        # Load in styling for GUI
-        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
-        with open(style_path, 'r') as qss:
-            style = qss.read()
-        self.setStyleSheet(style)
 
         rviz_display_layout = QVBoxLayout()
         rviz_display_layout.addWidget(self.rviz_frame)
