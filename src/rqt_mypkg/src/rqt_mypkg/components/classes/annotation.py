@@ -40,6 +40,7 @@ class Annotation:
     # creates the controls for the marker
     def _createInteractiveMarkerControls(self, marker):
         container_control = InteractiveMarkerControl()
+        container_control.interaction_mode  = InteractiveMarkerControl.BUTTON
         container_control.always_visible = True
         container_control.markers = [marker]
         #move marker along x axis control
@@ -65,3 +66,8 @@ class Annotation:
     # returns the interactive marker
     def getInteractiveMarker(self):
         return self.intMarker
+
+    # returns scale object from the bounding box marker
+    def get_scale(self):
+        return self.intMarker.controls[0].markers[0].scale
+    

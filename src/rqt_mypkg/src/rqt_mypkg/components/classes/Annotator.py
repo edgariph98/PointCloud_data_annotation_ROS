@@ -1,14 +1,11 @@
-from time import time
 import rospy
 from interactive_markers.interactive_marker_server import *
-from rospy.core import loginfo
 from visualization_msgs.msg import *
 from sensor_msgs.msg import PointCloud2
 from .annotation import Annotation
-import rviz
-import time
 from std_msgs.msg import ColorRGBA
 from annotation_msgs.msg import Annotation as Annotation_msg
+from interactive_markers.menu_handler import MenuHandler
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 
 class Annotator(QObject):
@@ -39,6 +36,8 @@ class Annotator(QObject):
         self.currentAnnotations = self.frames[self.currentFrame].annotations
         # the annotation msg selection sent from rviz whene selecting a set of points 
         self.selected_annotation = None
+        # menu 
+        self.menu = self._create_menu_handler()
 
     # sets the mode annotation to adding and creates and accessible object containing the information needed to created the Annotation
     # returns
@@ -68,8 +67,12 @@ class Annotator(QObject):
                 self.currentAnnotations.append(newAnnotation)
                 # inserting the marker of the new annotation in the server
                 self.server.insert(
-                    newAnnotation.getInteractiveMarker(), self.processFeedback)
+                    newAnnotation.getInteractiveMarker(), self._annotation_marker_clicked)
+                # applying changes to server and the menu for the interactive marker 
+                self.menu.apply(self.server,id)
                 self.server.applyChanges()
+                # adding id to the set of annotation ids
+                self.annotationIds.add(id)
                 # removing  selection from rviz
                 self.remove_selection()
                 self.selected_annotation = None
@@ -82,14 +85,7 @@ class Annotator(QObject):
                 self._printErrorMSG("No selection has been made")
 
             return success
-            
-    # TODO
-    # processing feedback for each marker
 
-    def processFeedback(self, feedback):
-        p = feedback.pose.position
-        print(feedback.marker_name + " is now at " +
-              str(p.x) + ", " + str(p.y) + ", " + str(p.z))
 
     # clears all annotations from annotations from server at the current frame
     def _clearAnnotations(self):
@@ -102,24 +98,26 @@ class Annotator(QObject):
                         ):
         self.remove_selection()
         self._clearAnnotations()
-        self._printLogMSG(
-            "Current Frame [{}], Loading Annotations".format(frameIndex))
         self.currentFrame = frameIndex
+        self._printLogMSG(
+            "Loading Annotations")
         self.currentAnnotations = self.frames[self.currentFrame].annotations
         for annotation in self.currentAnnotations:
+            self.menu.apply
             self.server.insert(
-                annotation.getInteractiveMarker(), self.processFeedback)
+                annotation.getInteractiveMarker(), self._annotation_marker_clicked)
+            self.menu.apply(self.server,annotation.getId())
         self.server.applyChanges()
 
     # print error msg
 
     def _printErrorMSG(self, msg):
-        rospy.logerr("[Annotator] " + msg)
+        rospy.logerr("[Annotator] Current Frame [{}] ".format(self.currentFrame) + msg)
 
     # print log msg
 
     def _printLogMSG(self, msg):
-        rospy.loginfo("[Annotator] " + msg)
+        rospy.loginfo("[Annotator] Current Frame [{}] ".format(self.currentFrame) + msg)
 
 
     # remvoing selection from rviz 
@@ -147,5 +145,61 @@ class Annotator(QObject):
             self.rviz_cancelled_new_annotation.emit()
 
 
-    
+    # deletes an annotation given its annotation id on the current frame, returns boolean determining if deletion was successful
+    def delete_annotation(self,annotation_id):
+        annotation_found = False
+        annotation_index = 0
+        for annotation in self.currentAnnotations:
+            if annotation_id == annotation.getId():
+                annotation_found = True
+                break
+            annotation_index +=1
+        self._printLogMSG(str(annotation_found))
+        # annotation found
+        if annotation_found:
+            # removing annotation from current set of annotations
+            self.currentAnnotations.pop(annotation_index)
+            #s removing annotation id from set of ids
+            self.annotationIds.remove(annotation_id)
+            # applying changes to the server
+            self.server.erase(annotation_id)
+            self.server.applyChanges()
+            self._printLogMSG("Annotaion id: {} has been deleted!, # current annotations: {}, # total Annotations: {}".format(annotation_id,len(self.currentAnnotations), len(self.annotationIds)))
+        else:
+            self._printErrorMSG("Annotation  with id: {}, not found! deletetion failed...".format(annotation_id))
+        return annotation_found
 
+    # creates a common menu for all markers from annotations
+    def _create_menu_handler(self):
+        menu = MenuHandler()
+        menu.insert("Delete",callback=self._delete_menu_entry_clicked)
+        return menu
+
+    # callback function to processwhen right click on interactive from the menu
+    def _delete_menu_entry_clicked(self, feedback):
+        annotation_id = feedback.marker_name
+        self._printLogMSG("Annotation ID: {}, Delete button clicked".format(feedback.marker_name))
+        self.delete_annotation(annotation_id)
+        # TODO send an signal to front end informing that the annotation has been deleted from the menu
+
+    # call back function to process when a marker for an annotation has been clicked
+    def _annotation_marker_clicked(self, feedback):
+        annotation_id = feedback.marker_name
+        clicked_annotation = self._find_annotation(annotation_id)
+
+        if feedback.event_type == InteractiveMarkerFeedback.BUTTON_CLICK and clicked_annotation:
+            scale = clicked_annotation.get_scale()
+            position = clicked_annotation.intMarker.pose.position
+            label = clicked_annotation.label if clicked_annotation.label else "NONE"
+            group_id = clicked_annotation.group_id
+            self._printLogMSG("Annotation ID: {}, Label:{}, groupId: {}, scale x:{}, y:{}, z:{}, Position x:{}, y:{}, z:{} has been clicked!".format(
+                annotation_id, label, group_id, scale.x, scale.y, scale.z, position.x, position.y, position.z))
+
+        # TODO create a and emit a signal to use by frontend to seend the details of the annotation clicked
+    
+    # returns the annotation object based on the ID on the current frame, if not found returns None
+    def _find_annotation(self, annotation_id):
+        for annotation in self.currentAnnotations:
+            if annotation_id == annotation.getId():
+                return annotation
+        return None
