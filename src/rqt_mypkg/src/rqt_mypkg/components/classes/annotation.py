@@ -1,7 +1,6 @@
 import uuid
 from visualization_msgs.msg import InteractiveMarker, InteractiveMarkerControl, Marker
 from std_msgs.msg import ColorRGBA
-from std_msgs.msg import ColorRGBA
 
 class Annotation:
     def __init__(self,
@@ -19,22 +18,27 @@ class Annotation:
         self.label = _label
         # the annotation group id
         self.group_id = _group_id
-        self.intMarker = self._createInteractiveMarker(_marker, _color)
+        # regular Marker msg
+        self.marker = _marker
+        # interactive marker
+        self.intMarker = self._createInteractiveMarker( _color)
         # the pointcloud 2 data catptured by the annotation
         self.captured_point_cloud = _pc2_msg
 
+
     
     # creates the marker box with all the shapes with given id
-    def _createInteractiveMarker(self, marker, color):
+    def _createInteractiveMarker(self, color):
         intMarker = InteractiveMarker()
         intMarker.name = self.id
         intMarker.description = "id:{},\nGroup: {},\nLabel: {},\n".format(
             self.id, self.group_id, self.label)
-        intMarker.header.frame_id = marker.header.frame_id
-        intMarker.pose = marker.pose
-        marker.color = color
+        intMarker.header.frame_id = self.marker.header.frame_id
+        intMarker.pose = self.marker.pose
+        # changing color of regular marker
+        self.marker.color = color
         intMarker.controls.extend(
-            self._createInteractiveMarkerControls(marker))
+            self._createInteractiveMarkerControls(self.marker))
         return intMarker
 
     # creates the controls for the marker
