@@ -6,13 +6,15 @@ from .annotation import Annotation
 from std_msgs.msg import ColorRGBA
 from annotation_msgs.msg import Annotation as Annotation_msg
 from interactive_markers.menu_handler import MenuHandler
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
+from PyQt5.QtCore import pyqtSignal, pyqtSlot,QObject
 
 class Annotator(QObject):
 
     pending_annotation_marker = pyqtSignal(float, float, float, float, float, float, name='get_pending_annotation_marker')
     pending_annotation_points = pyqtSignal(name='get_pending_annotation_points') 
     rviz_cancelled_new_annotation = pyqtSignal(name='rviz_cancelled_new_annotation')
+    annotation_details = pyqtSignal(str, str, str, float, float, float, float, float, float, name='annotation_details')
+    delete_annotation_signal = pyqtSignal(str, name='delete_annotation')
 
     def __init__(self, _frames):
         super(Annotator, self).__init__()
@@ -134,6 +136,7 @@ class Annotator(QObject):
         # we only use the bounding box marker if its not being deleted
         if not boundingBoxMarker.action == Marker.DELETE:
             scale = boundingBoxMarker.scale
+            print(type(scale))
             position = boundingBoxMarker.pose.position
             # setting  the current selected annotation
             self.selected_annotation = selected_annotation
@@ -146,6 +149,7 @@ class Annotator(QObject):
 
 
     # deletes an annotation given its annotation id on the current frame, returns boolean determining if deletion was successful
+    @pyqtSlot(str, name='confirmed_delete_annotation')
     def delete_annotation(self,annotation_id):
         annotation_found = False
         annotation_index = 0
@@ -180,7 +184,8 @@ class Annotator(QObject):
         annotation_id = feedback.marker_name
         self._printLogMSG("Annotation ID: {}, Delete button clicked".format(feedback.marker_name))
         self.delete_annotation(annotation_id)
-        # TODO send an signal to front end informing that the annotation has been deleted from the menu
+        # Update annotation list window
+        self.delete_annotation_signal.emit(annotation_id)
 
     # call back function to process when a marker for an annotation has been clicked
     def _annotation_marker_clicked(self, feedback):
@@ -194,8 +199,8 @@ class Annotator(QObject):
             group_id = clicked_annotation.group_id
             self._printLogMSG("Annotation ID: {}, Label:{}, groupId: {}, scale x:{}, y:{}, z:{}, Position x:{}, y:{}, z:{} has been clicked!".format(
                 annotation_id, label, group_id, scale.x, scale.y, scale.z, position.x, position.y, position.z))
-
-        # TODO create a and emit a signal to use by frontend to seend the details of the annotation clicked
+            # Send annotation details to the details window
+            self.annotation_details.emit(annotation_id, label, group_id, scale.x, scale.y, scale.z, position.x, position.y, position.z)
     
     # returns the annotation object based on the ID on the current frame, if not found returns None
     def _find_annotation(self, annotation_id):

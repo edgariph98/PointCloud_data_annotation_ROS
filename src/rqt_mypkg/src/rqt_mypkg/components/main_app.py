@@ -73,7 +73,7 @@ class MainApp(QMainWindow):
 
         # Create annotation details and list windows and add them to vertical layout
         annotations_layout = QVBoxLayout()
-        self.annotation_list = AnnotationListWindow(self.annotation_groups)
+        self.annotation_list = AnnotationListWindow(self.frames, self.annotation_groups)
         self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
         annotations_layout.addWidget(self.annotation_list)
         annotations_layout.addWidget(self.annotation_details)
@@ -85,6 +85,8 @@ class MainApp(QMainWindow):
         central_widget = QWidget()
         central_widget.setLayout(central_widget_layout)
         self.setCentralWidget(central_widget)
+
+        # self.load_rosbag('/home/trevor/Downloads/mcity1.bag', '/lidar_left/velodyne_points')
 
     def create_top_menubar(self):
         # self.statusBar()
@@ -160,7 +162,7 @@ class MainApp(QMainWindow):
         # Update drop down options in annotation details window
         self.annotation_details.add_annotation_group(group_name)
         # Add annotation group to annotation list window
-        self.annotation_list.add_annotation_group(new_annotation_group)
+        self.annotation_list.refresh(self.annotator.currentFrame)
 
     def launch_delete_annotation_group_popup(self):
         self.dialog = DeleteAnnotationGroupPopup(self.annotation_groups)
@@ -169,16 +171,14 @@ class MainApp(QMainWindow):
 
     @pyqtSlot(str, name='delete_annotation_group')
     def get_delete_annotation_group_data(self, group_name):
-        group_id = ''
         for group in self.annotation_groups:
             if group.name == group_name:
-                group_id = group.id
                 self.annotation_groups.remove(group)
                 break
         # Update drop down options in annotation details window
         self.annotation_details.delete_annotation_group(group_name)
         # Remove annotation group from annotation list window
-        self.annotation_list.delete_annotation_group(group_id)
+        self.annotation_list.refresh(self.annotator.currentFrame)
 
     # opening a rosbag and loading frames
     def load_rosbag(self, path, topic_name):
@@ -203,16 +203,27 @@ class MainApp(QMainWindow):
                 frame = Frame(t)
                 self.frames[index] = frame
                 index += 1
-            # Create Annotator with list of frames and annotation groups
+            # Create Annotator with list of frames
             self.annotator  = Annotator(self.frames)
+            # Set annotation list window's set of frames
+            self.annotation_list.set_frames(self.frames)
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
-# Connect signals and slots between Annotator and annotation_details_window
+            # Connect signals and slots between components
             self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
             self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
+            self.annotator.annotation_details.connect(self.annotation_details.get_annotation_details)
+            self.annotator.delete_annotation_signal.connect(self.annotation_list.delete_annotation)
+            self.annotator.delete_annotation_signal.connect(self.annotation_details.delete_annotation)
+
             self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
             self.annotation_details.cancelled_new_annotation.connect(self.cancelled_new_annotation)
+            self.annotation_details.confirmed_delete_annotation.connect(self.annotator.delete_annotation)
+            self.annotation_details.confirmed_delete_annotation.connect(self.annotation_list.delete_annotation)
 
+            self.bagPlayer.changed_frame.connect(self.annotation_list.refresh)
+            self.bagPlayer.changed_frame.connect(self.annotation_details.clear_fields)
+            self.annotation_list.annotation_details.connect(self.annotation_details.get_annotation_details)
 
     @pyqtSlot(str, str, str, name='confirm_annotation')
     def get_confirmed_annotation(self, label, annotation_id, group_id):
@@ -221,12 +232,10 @@ class MainApp(QMainWindow):
             annotation_id, label, group_id, group.name))
         valid_color = get_valid_ColorRGBA_MSG(group.color)
         self.annotator.createAnnotation(group_id,label,annotation_id,valid_color)
+        self.annotation_list.refresh(self.annotator.currentFrame)
 
     @pyqtSlot(name='cancelled_new_annotation')
     def cancelled_new_annotation(self):
-        #  Todo
-        # remove the marker
-        # reset reviz window state to whatever it should be
         print("Annotation just got cancelled")
         self.annotator.remove_selection()
 
@@ -245,24 +254,24 @@ class MainApp(QMainWindow):
         topic_name = str(topic_name)
         path = str(path)
         with rosbag.Bag(path, 'w') as outbag:
-        	for f in self.frames:
-			if lidar:
-				#load this frame from input rosbag
-				for topic, msg, t in self.bag.read_messages(topics=[self.input_topic], start_time=f.timestamp, end_time=f.timestamp):
-					outbag.write(topic, msg, t)
-        		msg = self.msg_from_Frame(f)
-        		outbag.write(topic_name, msg, f.timestamp)
+            for f in self.frames:
+                if lidar:
+                    #load this frame from input rosbag
+                    for topic, msg, t in self.bag.read_messages(topics=[self.input_topic], start_time=f.timestamp, end_time=f.timestamp):
+                        outbag.write(topic, msg, t)
+                    msg = self.msg_from_Frame(f)
+                    outbag.write(topic_name, msg, f.timestamp)
         		
     def msg_from_Frame(self, _frame):
     	msg = frame()
     	msg.id = str(_frame.id)
     	for a in _frame.annotations:
-		annot = annotation()
-		annot.id = a.id
-		annot.label = a.label
-		annot.group = a.group
-		annot.intMarker = a.intMarker
-		annot.captured_point_cloud = a.captured_point_cloud
-		msg.annotations.append(annot)
+            annot = annotation()
+            annot.id = a.id
+            annot.label = a.label
+            annot.group = a.group
+            annot.intMarker = a.intMarker
+            annot.captured_point_cloud = a.captured_point_cloud
+            msg.annotations.append(annot)
 	return msg
 

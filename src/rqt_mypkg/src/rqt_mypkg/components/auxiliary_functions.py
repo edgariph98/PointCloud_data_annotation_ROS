@@ -1,4 +1,5 @@
 from std_msgs.msg import ColorRGBA
+
 def deleteItemsOfLayout(layout):
      if layout is not None:
          while layout.count():

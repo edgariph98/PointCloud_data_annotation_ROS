@@ -4,9 +4,12 @@ from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QPushButton, QSlid
 from python_qt_binding.QtCore import Qt
 from sensor_msgs.msg import PointCloud2
 import rospy
+from PyQt5.QtCore import pyqtSignal
 
 # encapsulation of a bag player
 class BagPlayer(QWidget):
+
+    changed_frame = pyqtSignal(int, name='changed_frame')
 
     # rvizTopic is the topic where pc2 messages are send to display on the rviz main frame
     # pointCloudTopic is the topic where we read messeges from our rosbag
@@ -102,6 +105,8 @@ class BagPlayer(QWidget):
         rospy.loginfo("Current Frame {}, timestamp: {}".format(
             frameNumber, frameTimeStamp))
         self.annotator.loadAnnotations(frameNumber)
+        # Send new frame number to annotation list window
+        self.changed_frame.emit(frameNumber)
 
     # publishes a frame anytime the slider changes
     def sliderOnChange(self, newFrame):
