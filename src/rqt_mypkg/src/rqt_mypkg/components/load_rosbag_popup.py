@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal
 
 class LoadRosbagPopup(QWidget):
 
-    submitted = pyqtSignal(str, str, name='load_rosbag')
+    submitted = pyqtSignal(str, str, str, str, name='load_rosbag')
 
     def __init__(self):
         QWidget.__init__(self)
@@ -18,9 +18,9 @@ class LoadRosbagPopup(QWidget):
         # Create components
         self.topic_dropdown = QComboBox()
         self.topic_dropdown.setEnabled(False)
-	self.annot_dropdown = QComboBox()
+        self.annot_dropdown = QComboBox()
         self.annot_dropdown.setEnabled(False)
-	self.group_dropdown = QComboBox()
+        self.group_dropdown = QComboBox()
         self.group_dropdown.setEnabled(False)
         self.path = 'No file chosen'
         self.path_display = QLabel(text=self.path, font=QFont('Sans', 10))
@@ -57,9 +57,9 @@ class LoadRosbagPopup(QWidget):
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(text='Choose LiDAR topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.topic_dropdown)
-	self.layout.addWidget(QLabel(text='Choose annotation topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(QLabel(text='Choose annotation topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.annot_dropdown)
-	self.layout.addWidget(QLabel(text='Choose group topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(QLabel(text='Choose group topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.group_dropdown)
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(''))
@@ -73,7 +73,7 @@ class LoadRosbagPopup(QWidget):
         self.setStyleSheet(self.style)
 
     def on_submit(self):
-        self.submitted.emit( self.path, self.topic_dropdown.currentText() )
+        self.submitted.emit( self.path, self.topic_dropdown.currentText(), self.annot_dropdown.currentText(), self.group_dropdown.currentText() )
         self.close()
 
     def get_rosbag_filename(self):
@@ -87,14 +87,26 @@ class LoadRosbagPopup(QWidget):
             self.path_display.setText(self.path)
             # Check rosbag topics for PC2 data and build dropdown from those topics
             found_PC2_topic = False
+            found_annotation_topic = False
+            found_group_topic = False
             bag_type_and_topic_info = bag.get_type_and_topic_info()
             for index, topic in enumerate(bag_type_and_topic_info[1].values()):
                 if 'PointCloud2' in topic[0]:
                     self.topic_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
                     found_PC2_topic = True
-		else:
-		    rospy.loginfo(topic[0])
+                elif 'frame' in topic[0]:
+                    self.annot_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
+                    found_annotation_topic = True
+                elif 'group' in topic[0]:
+                    self.group_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
+                    found_group_topic = True
+                else:
+                    rospy.loginfo(topic[0])   
+            if found_annotation_topic:
+                self.annot_dropdown.setEnabled(True)
+                self.submit_button.setEnabled(True)
             # Enable dropdown selector and submit button if PC2 topic found
             if found_PC2_topic:
                 self.topic_dropdown.setEnabled(True)
                 self.submit_button.setEnabled(True)
+        

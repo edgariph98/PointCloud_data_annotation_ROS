@@ -15,7 +15,7 @@ class ExportRosbagPopup(QWidget):
         self.resize(640, 480)
         # self.topic_edit = QLineEdit()
         # self.message_b_edit = QLineEdit()
-        self.topic = QLineEdit('annotations')
+        self.topic = QLineEdit('/annotations')
         self.path = 'No path chosen'
         self.path_display = QLabel(
             text=self.path,
@@ -26,13 +26,11 @@ class ExportRosbagPopup(QWidget):
         self.cancel_button = QPushButton('Cancel')
         self.submit_button = QPushButton('Submit')
         self.submit_button.setEnabled(False)
-	self.lidar_checkbox = QCheckBox('Export LiDAR data')
 
         self.setLayout(QFormLayout())
         self.layout().addRow(self.file_button, self.path_display)
         self.layout().addRow('File Name', self.file_name)
         self.layout().addRow('Topic', self.topic)
-	self.layout().addRow(self.lidar_checkbox)
         buttons = QWidget()
         buttons.setLayout(QHBoxLayout())
         # buttons.layout().addWidget(self.file_button)
@@ -51,8 +49,7 @@ class ExportRosbagPopup(QWidget):
         self.setStyleSheet(self.style)
 
     def on_submit(self):
-	checked = self.lidar_checkbox.isChecked()
-        self.submitted.emit( self.path + '/' + self.file_name.text(), self.topic.text(), checked )
+        self.submitted.emit( self.path + '/' + self.file_name.text(), self.topic.text(), True )
         self.close()
 
     def get_rosbag_filename(self):

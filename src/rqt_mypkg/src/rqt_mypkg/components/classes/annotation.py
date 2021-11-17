@@ -14,8 +14,10 @@ class Annotation:
 
         # Unique id for an annotation
         self.id = _id
+
         # label for the annotation
         self.label = _label
+
         # the annotation group id
         self.group_id = _group_id
         # regular Marker msg
@@ -23,6 +25,7 @@ class Annotation:
         # interactive marker
         self.intMarker = self._createInteractiveMarker( _color)
         # the pointcloud 2 data catptured by the annotation
+
         self.captured_point_cloud = _pc2_msg
 
 

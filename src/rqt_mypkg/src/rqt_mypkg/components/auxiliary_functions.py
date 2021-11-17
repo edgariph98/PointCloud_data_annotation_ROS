@@ -1,5 +1,5 @@
 from std_msgs.msg import ColorRGBA
-
+from PyQt5.QtGui import QColor
 def deleteItemsOfLayout(layout):
      if layout is not None:
          while layout.count():
@@ -27,3 +27,11 @@ def get_valid_ColorRGBA_MSG(q_color):
     valid_color.b = float(rgbaValues[2]) / 255.0
     valid_color.a = 175 / 255.0
     return valid_color
+
+def get_valid_QColor(color_rgba):
+    r = int(color_rgba.r * 255.0)
+    g = int(color_rgba.g * 255.0)
+    b = int(color_rgba.b * 255.0)
+    a = int(color_rgba.a * 255.0)
+    valid_q_color = QColor.fromRgb(r, g, b, a)
+    return valid_q_color
