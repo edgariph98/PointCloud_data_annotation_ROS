@@ -32,6 +32,5 @@ def get_valid_QColor(color_rgba):
     r = int(color_rgba.r * 255.0)
     g = int(color_rgba.g * 255.0)
     b = int(color_rgba.b * 255.0)
-    a = int(color_rgba.a * 255.0)
-    valid_q_color = QColor.fromRgb(r, g, b, a)
+    valid_q_color = QColor.fromRgb(r, g, b)
     return valid_q_color

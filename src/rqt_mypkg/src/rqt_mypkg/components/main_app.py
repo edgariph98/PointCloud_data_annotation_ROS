@@ -227,6 +227,8 @@ class MainApp(QMainWindow):
                 if group_topic not in self.bag.get_type_and_topic_info()[1].keys():
                     rospy.logerr('Topic \'%s\' not found in rosbag', group_topic)
                     self.bag.close()
+                for group in self.annotation_groups:
+                    self.get_delete_annotation_group_data(group.name)
                 for topic, msg, t in self.bag.read_messages(topics=[group_topic]):
                     group_color = get_valid_QColor(msg.color)
                     group = AnnotationGroup(msg.name, group_color, msg.id)
@@ -235,25 +237,7 @@ class MainApp(QMainWindow):
                         # Update drop down options in annotation details window
                         self.annotation_details.add_annotation_group(msg.name)
                         # Remove annotation group from annotation list window
-                        self.annotation_list.refresh(self.annotator.currentFrame)
-            # # Create Annotator with list of frames and annotation groups
-            # self.annotator  = Annotator(self.frames)    
-
-            # # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            # self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
-            # # Connect signals and slots between Annotator and annotation_details_window
-            # if topic_name not in self.bag.get_type_and_topic_info()[1].keys():
-            #     rospy.logerr('Topic \'%s\' not found in rosbag', topic_name)
-            #     self.bag.close()
-            #     return
-            # # Create empty list of Frames for each message
-            # self.frames = [Frame]*self.bag.get_message_count(topic_name)
-            # # Iterate through msgs and populate the empty list
-            # index = 0
-            # for topic, msg, t in self.bag.read_messages(topics=[topic_name]):
-            #     frame = Frame(t)
-            #     self.frames[index] = frame
-            #     index += 1
+                        self.annotation_list.refresh(self.annotator.currentFrame)  
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
             # Connect signals and slots between components
@@ -332,7 +316,6 @@ class MainApp(QMainWindow):
     def frame_from_msg(self, t, _msg):
         frame = []
         for a in _msg.annotations:
-            rospy.loginfo("annotation found")
             annot = Annotation(a.id, a.label, a.group, a.marker, a.marker.color, a.captured_point_cloud)
             frame.append(annot)
         return frame
