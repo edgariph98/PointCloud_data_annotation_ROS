@@ -6,7 +6,7 @@ import rospy
 import rospkg
 from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QLineEdit
-from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QFont
+from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QIcon
 from PyQt5.QtCore import pyqtSlot
 import rviz 
 from std_msgs.msg import ColorRGBA
@@ -33,27 +33,27 @@ class MainApp(QMainWindow):
         # rosbag object
         self.bag = None
 
-        # Change default font
-        font_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'fonts', 'AtkinsonHyperlegible-Regular.ttf')
-        QFontDatabase.addApplicationFont(font_path)
+        self.resource_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource')
 
-        # Load in styling for GUI
-        style_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'dark.qss')
-        with open(style_path, 'r') as qss:
-            self.style = qss.read()
-        self.setStyleSheet(self.style)
-        
         self.initUI()
         self.input_path = ''
         self.input_topic = ''
 
     def initUI(self):
+        # Change default font
+        QFontDatabase.addApplicationFont(os.path.join(self.resource_path, 'fonts', 'AtkinsonHyperlegible-Regular.ttf'))
+
+        # Load in styling for GUI
+        with open(os.path.join(self.resource_path, 'dark.qss'), 'r') as qss:
+            self.style = qss.read()
+        self.setStyleSheet(self.style)
+        
         # Create RVIZ Visualization Frame
         self.rviz_frame = rviz.VisualizationFrame()
         self.rviz_frame.initialize()
         reader = rviz.YamlConfigReader()
         config = rviz.Config()
-        filePath = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource', 'vizualization_frame.config.rviz')
+        filePath = os.path.join(self.resource_path, 'vizualization_frame.config.rviz')
         reader.readFile( config, filePath)
         self.rviz_frame.load( config )
         # this removes the RVIZ fram menu bar
@@ -92,17 +92,18 @@ class MainApp(QMainWindow):
         # self.statusBar()
         menubar = self.menuBar()
         # File dropdown
-        load_rosbag_act = QAction(QIcon('loadfile.png'), 'Load rosbag', self)
+        icon_path = os.path.join(self.resource_path, 'icons')
+        load_rosbag_act = QAction(QIcon(os.path.join(icon_path, 'tray-arrow-down.svg')), 'Load rosbag', self)
         load_rosbag_act.triggered.connect(self.launch_load_rosbag_popup)
-        export_rosbag_act = QAction(QIcon('export.png'), 'Export annotations', self)
+        export_rosbag_act = QAction(QIcon(os.path.join(icon_path, 'tray-arrow-up.svg')), 'Export annotations', self)
         export_rosbag_act.triggered.connect(self.launch_export_rosbag_popup)
         file_menu = menubar.addMenu('File')
         file_menu.addAction(load_rosbag_act)
         file_menu.addAction(export_rosbag_act)
         # Annotation group dropdown
-        create_annotation_group_act = QAction(QIcon('new.png'), 'Create annotation group', self)
+        create_annotation_group_act = QAction(QIcon(os.path.join(icon_path, 'plus-thick.svg')), 'Create annotation group', self)
         create_annotation_group_act.triggered.connect(self.launch_create_annotation_group_popup)
-        delete_annotation_group_act = QAction(QIcon('delete.png'), 'Delete annotation group', self)
+        delete_annotation_group_act = QAction(QIcon(os.path.join(icon_path, 'delete.svg')), 'Delete annotation group', self)
         delete_annotation_group_act.triggered.connect(self.launch_delete_annotation_group_popup)
         annotation_group_menu = menubar.addMenu('Annotation group')
         annotation_group_menu.addAction(create_annotation_group_act)
