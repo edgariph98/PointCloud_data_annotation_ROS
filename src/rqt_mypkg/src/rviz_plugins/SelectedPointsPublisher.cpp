@@ -35,6 +35,7 @@
 #include <pcl/filters/crop_box.h>
 #include <pcl/common/angles.h>
 #include <annotation_msgs/Annotation.h>
+#include <std_msgs/Bool.h>
 namespace rqt_mypkg
 {
 SelectedPointsPublisher::SelectedPointsPublisher()
@@ -51,18 +52,21 @@ void SelectedPointsPublisher::updateTopic()
     nh_.param("frame_id", tf_frame_, std::string("/base_link"));
 
     // strings for topics
-    bb_marker_topic_         = std::string("/selection/bounding_box_marker");
-    annotation_created_topic = std::string("/selection/annotation_completed");
-    annotation_topic         = std::string("/selection/annotation");
+    bb_marker_topic_                    = std::string("/selection/bounding_box_marker");
+    annotation_completed_topic          = std::string("/selection/annotation_completed");
+    annotation_selected_created_topic   = std::string("/selection/annotation_selected_created");
+    annotation_selected_removed_topic   = std::string("/selectiom/annotation_selected_removed");
     
+
     // subscriber to update and remove selection, once annotation has been created
-    annotation_created_subscriber = nh_.subscribe(annotation_created_topic.c_str(),1,&SelectedPointsPublisher::annotationCreatedCallback,this);
+    annotation_completed_subscriber = nh_.subscribe(annotation_completed_topic.c_str(),1,&SelectedPointsPublisher::annotation_completed_callback,this);
     // publisher to publish bounding box marker that captures the points selected
     bb_marker_pub_ = nh_.advertise<visualization_msgs::Marker>(bb_marker_topic_.c_str(), 1);
-    // publisher to publish annotation messages of selected point cloud
-    annotation_selection_publisher = nh_.advertise<annotation_msgs::Annotation>(annotation_topic.c_str(),1);
-
-    ROS_INFO_STREAM_NAMED("SelectedPointsPublisher.updateTopic", "Publishing selected Annotation msg, with Bounding Box Marker, and the PointCloud2 Data on topic: " <<  nh_.resolveName (annotation_topic) );//<< " with frame_id " << context_->getFixedFrame().toStdString() );
+    // publisher to publish annotation msg when an annotation has been selected
+    annotation_selected_created_publisher   = nh_.advertise<annotation_msgs::Annotation>(annotation_selected_created_topic.c_str(),1);
+    // publisher to send a boolean message when the current selection has been cleared
+    annotation_selected_removed_publisher   = nh_.advertise<std_msgs::Bool>(annotation_selected_removed_topic.c_str(),1);
+    ROS_INFO_STREAM_NAMED("SelectedPointsPublisher.updateTopic", "Publishing selected Annotation msg, with Bounding Box Marker, and the PointCloud2 Data on topic: " <<  nh_.resolveName (annotation_selected_created_topic) );//<< " with frame_id " << context_->getFixedFrame().toStdString() );
     ROS_INFO_STREAM_NAMED("SelectedPointsPublisher.updateTopic", "Publishing selected bounding box marker on topic:                                                " <<  nh_.resolveName (bb_marker_topic_) );//<< " with frame_id " << context_->getFixedFrame().toStdString() );
 
     current_pc_.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
@@ -71,7 +75,7 @@ void SelectedPointsPublisher::updateTopic()
 }
 
 // annotation confirmations has been created, we clear current selection
-void SelectedPointsPublisher::annotationCreatedCallback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker){
+void SelectedPointsPublisher::annotation_completed_callback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker){
     this->removeSelectedPoints();
 }
 
@@ -98,8 +102,11 @@ int SelectedPointsPublisher::processMouseEvent( rviz::ViewportMouseEvent& event 
     }
     else
     {
-        if( event.leftDown() )
-        {
+        if( event.leftDown())
+        {   
+            if(event.shift() || event.control()){
+                this->remove_selected_bounding_box_marker();
+            }
             selecting_ = true;
         }
     }
@@ -118,7 +125,6 @@ int SelectedPointsPublisher::processMouseEvent( rviz::ViewportMouseEvent& event 
 int SelectedPointsPublisher::_processSelectedAreaAndFindPoints()
 {
     rviz::SelectionManager* sel_manager = context_->getSelectionManager();
-    sel_manager->removeHighlight();
     rviz::M_Picked selection = sel_manager->getSelection();
     rviz::PropertyTreeModel *model = sel_manager->getPropertyModel();
     int num_points = model->rowCount();
@@ -271,14 +277,46 @@ int SelectedPointsPublisher::_processSelectedAreaAndFindPoints()
     newAnnotation.num_points = num_points;
     newAnnotation.bounding_box = marker;
     newAnnotation.captured_point_cloud = selected_points_ros;
-    annotation_selection_publisher.publish(newAnnotation);
+    // publishing annotation selected
+    annotation_selected_created_publisher.publish(newAnnotation);
+    
     return 0;
 }
 // removes the current selected points and deletes the bounding box 
 void SelectedPointsPublisher::removeSelectedPoints(){
+    // removing current selection
     rviz::SelectionManager* sel_manager = context_->getSelectionManager();
     rviz::M_Picked selection = sel_manager->getSelection();
     sel_manager->removeSelection(selection);
+    // resetting pointcloud segment
+    selected_segment_pc_.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
+    // removing current selection bounding box marker
+    this->remove_selected_bounding_box_marker();
+    std_msgs::Bool annotation_removed;
+    // updating annotation removed topic
+    annotation_removed.data = true;
+    this->annotation_selected_removed_publisher.publish(annotation_removed);
+    
+    // sel_manager->removeSelection(selection);
+    // visualization_msgs::Marker marker;
+    // // Set the frame ID and timestamp.  See the TF tutorials for information on these.
+    // marker.header.frame_id = context_->getFixedFrame().toStdString().c_str();
+    // marker.header.stamp = ros::Time::now();
+    // marker.ns = "basic_shapes";
+    // marker.id = 0;
+    // marker.type = visualization_msgs::Marker::CUBE;
+    // marker.action = visualization_msgs::Marker::DELETE;
+    // marker.lifetime = ros::Duration();
+
+    // selected_segment_pc_.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
+    // annotation_msgs::Annotation annotation;
+    // annotation.bounding_box = marker;
+    // annotation_selection_publisher.publish(annotation);
+    // bb_marker_pub_.publish(marker);
+}
+// removes current bounding box marker
+void SelectedPointsPublisher::remove_selected_bounding_box_marker(){
+    // deleting marker
     visualization_msgs::Marker marker;
     // Set the frame ID and timestamp.  See the TF tutorials for information on these.
     marker.header.frame_id = context_->getFixedFrame().toStdString().c_str();
@@ -287,12 +325,7 @@ void SelectedPointsPublisher::removeSelectedPoints(){
     marker.id = 0;
     marker.type = visualization_msgs::Marker::CUBE;
     marker.action = visualization_msgs::Marker::DELETE;
-    marker.lifetime = ros::Duration();
-
-    selected_segment_pc_.reset(new pcl::PointCloud<pcl::PointXYZRGB>);
-    annotation_msgs::Annotation annotation;
-    annotation.bounding_box = marker;
-    annotation_selection_publisher.publish(annotation);
+    marker.lifetime = ros::Duration();  
     bb_marker_pub_.publish(marker);
 }
 

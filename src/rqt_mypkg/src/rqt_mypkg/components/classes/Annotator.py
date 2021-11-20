@@ -5,6 +5,7 @@ from sensor_msgs.msg import PointCloud2
 from .annotation import Annotation
 from std_msgs.msg import ColorRGBA
 from annotation_msgs.msg import Annotation as Annotation_msg
+from std_msgs.msg import Bool as Bool_msg
 from interactive_markers.menu_handler import MenuHandler
 from PyQt5.QtCore import pyqtSignal, pyqtSlot,QObject
 
@@ -25,7 +26,9 @@ class Annotator(QObject):
                 "/selection/annotation_completed", Marker, queue_size=1)
 
             # this subscriber of Annotation MSG gets the annotation message from the selected points tool
-            self.annotation_selection_subscriber = rospy.Subscriber("/selection/annotation",Annotation_msg,self._get_annotation_selection)
+            self.annotation_selected_subscriber = rospy.Subscriber("/selection/annotation_selected_created",Annotation_msg,self._annotation_selected)
+            # this subscriber us infromed with a Bool msg when a pending annotation has been removed from rviz
+            self.annotation_selected_removed_subscriber =  rospy.Subscriber("/selection/annotation_selected_removed",Bool_msg,self._annotation_selected_removed)
         except Exception as e:
             self._printErrorMSG("{}".format(e))
         # unique ids of all annotations across all frames
@@ -40,6 +43,7 @@ class Annotator(QObject):
         self.selected_annotation = None
         # menu 
         self.menu = self._create_menu_handler()
+        self._update_annotation_ids()
 
     # sets the mode annotation to adding and creates and accessible object containing the information needed to created the Annotation
     # returns
@@ -128,26 +132,30 @@ class Annotator(QObject):
         # when this publisher sends a message, it removes selection from rviz
         self.annotationCreatedPublisher.publish(emptyMarker)
 
-    def _get_annotation_selection(
+    def _annotation_selected(
         self, 
         selected_annotation # Annotation_msg
         ):
         boundingBoxMarker = selected_annotation.bounding_box
         # we only use the bounding box marker if its not being deleted
-        if not boundingBoxMarker.action == Marker.DELETE:
-            scale = boundingBoxMarker.scale
-            print(type(scale))
-            position = boundingBoxMarker.pose.position
-            # setting  the current selected annotation
-            self.selected_annotation = selected_annotation
-            self._printLogMSG("New Annotation selected, Total Points Selected: {}, Bounding Box Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
-                selected_annotation.num_points, scale.x, scale.y, scale.z, position.x, position.y, position.z))
-            # Send signal with marker details
-            self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
-        else:
-            self.rviz_cancelled_new_annotation.emit()
+        # if not boundingBoxMarker.action == Marker.DELETE:
+        # scale and position of the annotation
+        scale = boundingBoxMarker.scale
+        position = boundingBoxMarker.pose.position
+        # setting  the current selected annotation
+        self.selected_annotation = selected_annotation
+        self._printLogMSG("New Annotation selected, Total Points Selected: {}, Bounding Box Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
+            selected_annotation.num_points, scale.x, scale.y, scale.z, position.x, position.y, position.z))
+        # Send signal with marker details
+        self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
+        # else:
+        #     self.rviz_cancelled_new_annotation.emit()
 
-
+    # annotation callback when annotation selection has been removed in rviz
+    def _annotation_selected_removed(self, _bool_msg):
+        # updating that rviz has canclled an annotation
+        self.rviz_cancelled_new_annotation.emit()
+    
     # deletes an annotation given its annotation id on the current frame, returns boolean determining if deletion was successful
     @pyqtSlot(str, name='confirmed_delete_annotation')
     def delete_annotation(self,annotation_id):
@@ -208,3 +216,10 @@ class Annotator(QObject):
             if annotation_id == annotation.getId():
                 return annotation
         return None
+    # when the annotator is initilized we check for any existing annotation in the frames and add them in the set for ids
+    def _update_annotation_ids(self):
+        for _frame in self.frames:
+            for _annotation in _frame.annotations:
+                self.annotationIds.add(_annotation.getId())
+
+

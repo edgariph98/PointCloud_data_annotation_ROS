@@ -93,26 +93,31 @@ public Q_SLOTS:
    */
   void updateTopic();
 
-  void annotationCreatedCallback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker);
+  void annotation_completed_callback(const visualization_msgs::MarkerConstPtr &boundingBoxMarker);
 
 protected:
   // grabs the selected points and generates bounding boX marker
   int _processSelectedAreaAndFindPoints();
   // resets selection and removes bounding box marker displaying
   void removeSelectedPoints();
+  // removes current bounding box marker
+  void remove_selected_bounding_box_marker();
   ros::NodeHandle nh_;
   // publisher for publushing bounding box marker of selection made
   ros::Publisher bb_marker_pub_;
-  // subscriber used to update selection once annotation has been created
-  ros::Subscriber annotation_created_subscriber;
-  // publisher for the annotation message selection
-  ros::Publisher annotation_selection_publisher;
-
+  // subscriber used to update selection once annotation has been created and completed
+  ros::Subscriber annotation_completed_subscriber;
+  // publisher for the annotation selected 
+  ros::Publisher annotation_selected_created_publisher;
+  // publisher to when an annotation has been cleared
+  ros::Publisher annotation_selected_removed_publisher;
+  
   std::string tf_frame_;
   // strings for subscribers and puublishers
   std::string bb_marker_topic_;
-  std::string annotation_created_topic;
-  std::string annotation_topic;
+  std::string annotation_completed_topic;
+  std::string annotation_selected_created_topic;
+  std::string annotation_selected_removed_topic;
 
   bool selecting_;
 
