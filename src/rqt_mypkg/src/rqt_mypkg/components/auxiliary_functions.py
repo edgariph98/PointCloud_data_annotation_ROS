@@ -1,5 +1,8 @@
 from std_msgs.msg import ColorRGBA
 from PyQt5.QtGui import QColor
+from annotation_msgs.msg import frame, annotation
+from classes import Frame, Annotator, Annotation, AnnotationGroup
+
 def deleteItemsOfLayout(layout):
      if layout is not None:
          while layout.count():
@@ -34,3 +37,23 @@ def get_valid_QColor(color_rgba):
     b = int(color_rgba.b * 255.0)
     valid_q_color = QColor.fromRgb(r, g, b)
     return valid_q_color
+
+def msg_from_frame(_frame):
+    msg = frame()
+    msg.id = str(_frame.id)
+    for a in _frame.annotations:
+        annot = annotation()
+        annot.id = a.id
+        annot.label = a.label
+        annot.group = a.group_id
+        annot.marker = a.marker
+        annot.captured_point_cloud = a.captured_point_cloud
+        msg.annotations.append(annot)
+    return msg
+
+def frame_from_msg(t, _msg):
+    frame = []
+    for a in _msg.annotations:
+        annot = Annotation(a.id, a.label, a.group, a.marker, a.marker.color, a.captured_point_cloud)
+        frame.append(annot)
+    return frame

@@ -5,12 +5,12 @@ from interactive_markers.interactive_marker_server import MarkerContext
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QPushButton, QVBoxLayout, QHBoxLayout,QMainWindow, QLabel, QAction, QMessageBox, QLineEdit
+from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QAction, QMessageBox
 from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QIcon
 from PyQt5.QtCore import pyqtSlot
 import rviz 
 from std_msgs.msg import ColorRGBA
-from classes import Frame, Annotator, Annotation, AnnotationGroup
+from classes import Frame, Annotator, AnnotationGroup
 import rosbag
 from load_rosbag_popup import LoadRosbagPopup
 from export_rosbag_popup import ExportRosbagPopup
@@ -19,8 +19,8 @@ from delete_annotation_group_popup import DeleteAnnotationGroupPopup
 from annotation_details_window import AnnotationDetailsWindow
 from annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
-from annotation_msgs.msg import frame, annotation, annotation_group
-from .auxiliary_functions import get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor
+from annotation_msgs.msg import annotation_group
+from .auxiliary_functions import get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor, msg_from_frame, frame_from_msg
 
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
@@ -36,8 +36,6 @@ class MainApp(QMainWindow):
         self.resource_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource')
 
         self.initUI()
-        self.input_path = ''
-        self.input_topic = ''
 
     def initUI(self):
         # Change default font
@@ -86,8 +84,6 @@ class MainApp(QMainWindow):
         central_widget.setLayout(central_widget_layout)
         self.setCentralWidget(central_widget)
 
-        # self.load_rosbag('/home/trevor/Downloads/mcity1.bag', '/lidar_left/velodyne_points')
-
     def create_top_menubar(self):
         # self.statusBar()
         menubar = self.menuBar()
@@ -109,18 +105,44 @@ class MainApp(QMainWindow):
         annotation_group_menu.addAction(create_annotation_group_act)
         annotation_group_menu.addAction(delete_annotation_group_act)        
 
-    def launch_load_rosbag_popup(self): 
-        self.dialog = LoadRosbagPopup()
-        self.dialog.submitted.connect(self.get_load_rosbag_data)
-        self.dialog.show()
-        
-    def launch_export_rosbag_popup(self):
-        self.dialog = ExportRosbagPopup()
-        self.dialog.submitted.connect(self.get_export_rosbag_data)
-        self.dialog.show()
+    def launch_create_annotation_group_popup(self):
+        self.creat_annotation_group_popup = CreateAnnotationGroupPopup(self.annotation_groups)
+        self.creat_annotation_group_popup.created.connect(self.create_annotation_group)
+        self.creat_annotation_group_popup.show()
 
+    @pyqtSlot(str, QColor, name='create_annotation_group')
+    def create_annotation_group(self, group_name, color):
+        new_annotation_group = AnnotationGroup(group_name, color)
+        self.annotation_groups.append(new_annotation_group)
+        # Update drop down options in annotation details window
+        self.annotation_details.add_annotation_group(group_name)
+        # Add annotation group to annotation list window
+        self.annotation_list.refresh(self.annotator.currentFrame)
+
+    def launch_delete_annotation_group_popup(self):
+        self.delete_annotation_group_popup = DeleteAnnotationGroupPopup(self.annotation_groups)
+        self.delete_annotation_group_popup.deleted.connect(self.delete_annotation_group)
+        self.delete_annotation_group_popup.show()
+
+    @pyqtSlot(str, name='delete_annotation_group')
+    def delete_annotation_group(self, group_name):
+        for group in self.annotation_groups:
+            if group.name == group_name:
+                self.annotation_groups.remove(group)
+                break
+        # Update drop down options in annotation details window
+        self.annotation_details.delete_annotation_group(group_name)
+        # Remove annotation group from annotation list window
+        self.annotation_list.refresh(self.annotator.currentFrame)
+
+    def launch_load_rosbag_popup(self): 
+        self.load_rosbag_popup = LoadRosbagPopup()
+        self.load_rosbag_popup.submitted.connect(self.load_rosbag)
+        self.load_rosbag_popup.show()
+
+    # opening a rosbag and loading frames
     @pyqtSlot(str, str, str, str, name='load_rosbag')
-    def get_load_rosbag_data(self, path, topic, annot, group):
+    def load_rosbag(self, _path, _lidar_topic_name, _annot_topic_name, _group_topic_name):
         # If a bag has already been loaded, warn the user
         if len(self.frames) != 0:
             msg = QMessageBox()
@@ -133,103 +155,73 @@ class MainApp(QMainWindow):
             retval = msg.exec_()
             if retval == QMessageBox.Cancel:
                 return
-        self.load_rosbag(path, topic, annot, group)
-      
-    @pyqtSlot(str, str, bool, name='export_rosbag')    
-    def get_export_rosbag_data(self, path, topic, lidar):
-    	# If a bag has not already been loaded warn the user
-        if len(self.frames) == 0:
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Warning)
-            msg.setText('A rosbag has not already been loaded.')
-            msg.setInformativeText('Exporting without any frames or annotations will not create a rosbag.')
-            msg.setWindowTitle('Warning')
-            # msg.setDetailedText('The details are as follows:')
-            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-            retval = msg.exec_()
-            if retval == QMessageBox.Cancel:
-                return
-    	self.export_rosbag(path, topic, lidar)
-
-    def launch_create_annotation_group_popup(self):
-        self.dialog = CreateAnnotationGroupPopup(self.annotation_groups)
-        self.dialog.created.connect(self.get_create_annotation_group_data)
-        self.dialog.show()
-
-    @pyqtSlot(str, QColor, name='create_annotation_group')
-    def get_create_annotation_group_data(self, group_name, color):
-        new_annotation_group = AnnotationGroup(group_name, color)
-        self.annotation_groups.append(new_annotation_group)
-        # Update drop down options in annotation details window
-        self.annotation_details.add_annotation_group(group_name)
-        # Add annotation group to annotation list window
-        self.annotation_list.refresh(self.annotator.currentFrame)
-
-    def launch_delete_annotation_group_popup(self):
-        self.dialog = DeleteAnnotationGroupPopup(self.annotation_groups)
-        self.dialog.deleted.connect(self.get_delete_annotation_group_data)
-        self.dialog.show()
-
-    @pyqtSlot(str, name='delete_annotation_group')
-    def get_delete_annotation_group_data(self, group_name):
-        for group in self.annotation_groups:
-            if group.name == group_name:
-                self.annotation_groups.remove(group)
-                break
-        # Update drop down options in annotation details window
-        self.annotation_details.delete_annotation_group(group_name)
-        # Remove annotation group from annotation list window
-        self.annotation_list.refresh(self.annotator.currentFrame)
-
-    # opening a rosbag and loading frames
-    def load_rosbag(self, path, topic_name, annot_topic, group_topic):
-        topic_name = str(topic_name)
-        path = str(path)
+        
+        path, self.input_path = str(_path), str(_path)
+        lidar_topic_name, self.input_lidar_topic_name = str(_lidar_topic_name), str(_lidar_topic_name)
+        annot_topic_name = str(_annot_topic_name)
+        group_topic_name = str(_group_topic_name)
         try:
             self.bag = rosbag.Bag(path)
         except:
             rospy.logerr('Unable to open file: %s', path)
         else:
-            self.input_path = path
-            self.input_topic = topic_name
-            if topic_name != "":
-                if topic_name not in self.bag.get_type_and_topic_info()[1].keys():
-                    rospy.logerr('Topic \'%s\' not found in rosbag', topic_name)
+            # Ensure topic names are in the bag and get the total number of messages for the progress bar
+            total_msgs = 0
+            annot_topic_exists = False
+            group_topic_exists = False
+            if lidar_topic_name != '':
+                if lidar_topic_name not in self.bag.get_type_and_topic_info()[1].keys():
+                    rospy.logerr('Topic \'%s\' not found in rosbag', lidar_topic_name)
                     self.bag.close()
                     return
+                lidar_topic_exists = True
+                total_msgs += self.bag.get_message_count(lidar_topic_name)
+            else:
+                return
+            if annot_topic_name != '':
+                if annot_topic_name not in self.bag.get_type_and_topic_info()[1].keys():
+                    rospy.logerr('Topic \'%s\' not found in rosbag', annot_topic_name)
+                else:
+                    annot_topic_exists = True
+                    total_msgs += self.bag.get_message_count(annot_topic_name)
+            if group_topic_name != '':
+                if group_topic_name not in self.bag.get_type_and_topic_info()[1].keys():
+                    rospy.logerr('Topic \'%s\' not found in rosbag', group_topic_name)
+                else:
+                    group_topic_exists = True
+                    total_msgs += self.bag.get_message_count(group_topic_name)
+            
+            self.load_rosbag_popup.set_progress_bar_range(total_msgs)
+
+            if lidar_topic_exists:
                 # Create empty list of Frames for each message
-                self.frames = [Frame]*self.bag.get_message_count(topic_name)
+                self.frames = [Frame]*self.bag.get_message_count(lidar_topic_name)
                 # Iterate through msgs and populate the empty list
                 index = 0
-                for topic, msg, t in self.bag.read_messages(topics=[topic_name]):
+                for topic, msg, t in self.bag.read_messages(topics=[lidar_topic_name]):
                     frame = Frame(t)
                     self.frames[index] = frame
                     index += 1
-            if annot_topic != "":
-                if annot_topic not in self.bag.get_type_and_topic_info()[1].keys():
-                    rospy.logerr('Topic \'%s\' not found in rosbag', annot_topic)
-                    self.bag.close()
-                    return
+                    self.load_rosbag_popup.increment_progress_bar()
+            if annot_topic_exists:
                 if len(self.frames) == 0:
-                    self.frames = [Frame]*self.bag.get_message_count(annot_topic)
-                index  = 0
-                for topic, msg, t in self.bag.read_messages(topics=[annot_topic]):
-                    frame = self.frame_from_msg(t, msg)
+                    self.frames = [Frame]*self.bag.get_message_count(annot_topic_name)
+                index = 0
+                for topic, msg, t in self.bag.read_messages(topics=[annot_topic_name]):
+                    frame = frame_from_msg(t, msg)
                     self.frames[index].annotations = frame
                     index += 1
+                    self.load_rosbag_popup.increment_progress_bar()
             
             # Create Annotator with list of frames
             self.annotator  = Annotator(self.frames)
             # Set annotation list window's set of frames
             self.annotation_list.set_frames(self.frames)
 
-            if group_topic != "":
-                if group_topic not in self.bag.get_type_and_topic_info()[1].keys():
-                    rospy.logerr('Topic \'%s\' not found in rosbag', group_topic)
-                    self.bag.close()
+            if group_topic_exists:
                 for group in self.annotation_groups:
-                    self.get_delete_annotation_group_data(group.name)
-                for topic, msg, t in self.bag.read_messages(topics=[group_topic]):
+                    self.delete_annotation_group(group.name)
+                for topic, msg, t in self.bag.read_messages(topics=[group_topic_name]):
                     group_color = get_valid_QColor(msg.color)
                     group = AnnotationGroup(msg.name, group_color, msg.id)
                     if group not in self.annotation_groups:
@@ -237,9 +229,11 @@ class MainApp(QMainWindow):
                         # Update drop down options in annotation details window
                         self.annotation_details.add_annotation_group(msg.name)
                         # Remove annotation group from annotation list window
-                        self.annotation_list.refresh(self.annotator.currentFrame)  
+                        self.annotation_list.refresh(self.annotator.currentFrame)
+                        self.load_rosbag_popup.increment_progress_bar()
+
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
-            self.bagPlayer.updateBag(topic_name, self.bag, self.frames,self.annotator)
+            self.bagPlayer.updateBag(lidar_topic_name, self.bag, self.frames,self.annotator)
             # Connect signals and slots between components
             self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
             self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
@@ -256,6 +250,46 @@ class MainApp(QMainWindow):
             self.bagPlayer.changed_frame.connect(self.annotation_details.clear_fields)
             self.annotation_list.annotation_details.connect(self.annotation_details.get_annotation_details)
 
+    def launch_export_rosbag_popup(self):
+        # If a bag has not been loaded notify the user and abort
+        if len(self.frames) == 0:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText('A rosbag has not been loaded.')
+            msg.setInformativeText('You cannot export an empty rosbag.')
+            msg.setWindowTitle('Error')
+            # msg.setDetailedText('The details are as follows:')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+            return
+        self.export_rosbag_popup = ExportRosbagPopup()
+        self.export_rosbag_popup.submitted.connect(self.export_rosbag)
+        self.export_rosbag_popup.show()
+
+    @pyqtSlot(str, str, bool, name='export_rosbag') 
+    def export_rosbag(self, path, topic_name, export_lidar):
+        topic_name = str(topic_name)
+        path = str(path)
+        if self.input_path == path:
+	        rospy.logerr("Error: Cannot export to the input rosbag")
+        with rosbag.Bag(path, 'w') as outbag:
+            total_msgs = len(self.frames) + len(self.annotation_groups)
+            self.export_rosbag_popup.set_progress_bar_range(total_msgs)
+            for f in self.frames:
+                #load this frame from input rosbag
+                for topic, msg, t in self.bag.read_messages(topics=[self.input_lidar_topic_name], start_time=f.timestamp, end_time=f.timestamp):
+                    outbag.write(topic, msg, t)
+                msg = msg_from_frame(f)
+                outbag.write(topic_name, msg, f.timestamp)
+                self.export_rosbag_popup.increment_progress_bar()
+            for g in self.annotation_groups:
+                group = annotation_group()
+                group.color = get_valid_ColorRGBA_MSG(g.color)
+                group.name = g.name
+                group.id = g.id
+                outbag.write('/group', group)
+                self.export_rosbag_popup.increment_progress_bar()
+    
     @pyqtSlot(str, str, str, name='confirm_annotation')
     def get_confirmed_annotation(self, label, annotation_id, group_id):
         group = get_annotation_group_by_id(self.annotation_groups, group_id)
@@ -280,43 +314,3 @@ class MainApp(QMainWindow):
         color.b = float(b)
         color.a = 0.3
         self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)
-
-    def export_rosbag(self, path, topic_name, lidar):
-        topic_name = str(topic_name)
-        path = str(path)
-        if self.input_path == path:
-	        rospy.logerr("Error: Cannot export to the input rosbag")
-        with rosbag.Bag(path, 'w') as outbag:
-            for f in self.frames:
-                #load this frame from input rosbag
-                for topic, msg, t in self.bag.read_messages(topics=[self.input_topic], start_time=f.timestamp, end_time=f.timestamp):
-                    outbag.write(topic, msg, t)
-                msg = self.msg_from_frame(f)
-                outbag.write(topic_name, msg, f.timestamp)
-            for g in self.annotation_groups:
-                group = annotation_group()
-                group.color = get_valid_ColorRGBA_MSG(g.color)
-                group.name = g.name
-                group.id = g.id
-                outbag.write('/group', group)
-        		
-    def msg_from_frame(self, _frame):
-        msg = frame()
-    	msg.id = str(_frame.id)
-        for a in _frame.annotations:
-            annot = annotation()
-            annot.id = a.id
-            annot.label = a.label
-            annot.group = a.group_id
-            annot.marker = a.marker
-            annot.captured_point_cloud = a.captured_point_cloud
-            msg.annotations.append(annot)
-        return msg
-    
-    def frame_from_msg(self, t, _msg):
-        frame = []
-        for a in _msg.annotations:
-            annot = Annotation(a.id, a.label, a.group, a.marker, a.marker.color, a.captured_point_cloud)
-            frame.append(annot)
-        return frame
-

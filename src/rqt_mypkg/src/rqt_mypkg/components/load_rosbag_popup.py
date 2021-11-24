@@ -2,7 +2,7 @@ import os
 import rospy
 import rosbag
 import rospkg
-from python_qt_binding.QtWidgets import QWidget, QFileDialog, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QComboBox
+from python_qt_binding.QtWidgets import QWidget, QProgressBar, QFileDialog, QHBoxLayout, QVBoxLayout, QPushButton, QLabel, QComboBox
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal
 
@@ -16,8 +16,8 @@ class LoadRosbagPopup(QWidget):
         self.resize(450, 230)
 
         # Create components
-        self.topic_dropdown = QComboBox()
-        self.topic_dropdown.setEnabled(False)
+        self.pc2_dropdown = QComboBox()
+        self.pc2_dropdown.setEnabled(False)
         self.annot_dropdown = QComboBox()
         self.annot_dropdown.setEnabled(False)
         self.group_dropdown = QComboBox()
@@ -29,6 +29,9 @@ class LoadRosbagPopup(QWidget):
         self.cancel_button = QPushButton('Cancel')
         self.submit_button = QPushButton('Submit')
         self.submit_button.setEnabled(False)
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
 
         # Connect buttons to signals and functions
         self.file_button.clicked.connect(self.get_rosbag_filename)
@@ -56,12 +59,14 @@ class LoadRosbagPopup(QWidget):
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(text='Choose LiDAR topic:', font=QFont('Sans', 10)))
-        self.layout.addWidget(self.topic_dropdown)
+        self.layout.addWidget(self.pc2_dropdown)
         self.layout.addWidget(QLabel(text='Choose annotation topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.annot_dropdown)
-        self.layout.addWidget(QLabel(text='Choose group topic:', font=QFont('Sans', 10)))
+        self.layout.addWidget(QLabel(text='Choose annotation group topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.group_dropdown)
         self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(QLabel(''))
+        self.layout.addWidget(self.progress_bar)
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(button_widget)
         self.setLayout(self.layout)
@@ -73,17 +78,26 @@ class LoadRosbagPopup(QWidget):
         self.setStyleSheet(self.style)
 
     def on_submit(self):
-        self.submitted.emit( self.path, self.topic_dropdown.currentText(), self.annot_dropdown.currentText(), self.group_dropdown.currentText() )
+        self.submitted.emit( self.path, self.pc2_dropdown.currentText(), self.annot_dropdown.currentText(), self.group_dropdown.currentText() )
         self.close()
 
     def get_rosbag_filename(self):
         # Retrieve rosbag path string from file explorer window
         self.path = QFileDialog.getOpenFileName(self, 'Open a rosbag', '', 'Rosbag Files (*.bag)')[0]
+        if not self.path:
+            # User cancelled the file selection dialog, return
+            self.submit_button.setEnabled(False)
+            return
         try:
             bag = rosbag.Bag(self.path)
         except:
             rospy.logerr('Unable to open file: %s', self.path)
         else:
+            # Clear any items from a previous file selection
+            self.pc2_dropdown.clear()
+            self.annot_dropdown.clear()
+            self.group_dropdown.clear()
+
             self.path_display.setText(self.path)
             # Check rosbag topics for PC2 data and build dropdown from those topics
             found_PC2_topic = False
@@ -92,7 +106,7 @@ class LoadRosbagPopup(QWidget):
             bag_type_and_topic_info = bag.get_type_and_topic_info()
             for index, topic in enumerate(bag_type_and_topic_info[1].values()):
                 if 'PointCloud2' in topic[0]:
-                    self.topic_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
+                    self.pc2_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
                     found_PC2_topic = True
                 elif 'frame' in topic[0]:
                     self.annot_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
@@ -100,13 +114,17 @@ class LoadRosbagPopup(QWidget):
                 elif 'group' in topic[0]:
                     self.group_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
                     found_group_topic = True
-                else:
-                    rospy.loginfo(topic[0])   
             if found_annotation_topic:
                 self.annot_dropdown.setEnabled(True)
-                self.submit_button.setEnabled(True)
+            if found_group_topic:
+                self.group_dropdown.setEnabled(True)
             # Enable dropdown selector and submit button if PC2 topic found
             if found_PC2_topic:
-                self.topic_dropdown.setEnabled(True)
+                self.pc2_dropdown.setEnabled(True)
                 self.submit_button.setEnabled(True)
-        
+    
+    def set_progress_bar_range(self, max_progress):
+        self.progress_bar.setRange(0, max_progress)
+
+    def increment_progress_bar(self):
+        self.progress_bar.setValue(self.progress_bar.value() + 1)
