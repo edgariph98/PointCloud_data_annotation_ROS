@@ -5,7 +5,7 @@ from interactive_markers.interactive_marker_server import MarkerContext
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QAction, QMessageBox
+from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QAction, QMessageBox, QAbstractButton
 from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QIcon
 from PyQt5.QtCore import pyqtSlot
 import rviz 
@@ -21,7 +21,7 @@ from annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
 from annotation_msgs.msg import annotation_group
 from .auxiliary_functions import get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor, msg_from_frame, frame_from_msg
-
+from .rviz_toolbar import RvizToolBar
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
     def __init__(self):
@@ -47,25 +47,21 @@ class MainApp(QMainWindow):
         self.setStyleSheet(self.style)
         
         # Create RVIZ Visualization Frame
-        self.rviz_frame = rviz.VisualizationFrame()
-        self.rviz_frame.initialize()
-        reader = rviz.YamlConfigReader()
-        config = rviz.Config()
-        filePath = os.path.join(self.resource_path, 'vizualization_frame.config.rviz')
-        reader.readFile( config, filePath)
-        self.rviz_frame.load( config )
-        # this removes the RVIZ fram menu bar
-        self.rviz_frame.setMenuBar( None )
-              
+        self.rviz_frame = self._create_rviz_frame()
+        # Tool menu bar
+        self.rviz_tool_bar = RvizToolBar(self.rviz_frame)
+
         # Create bag player
         self.bagPlayer = BagPlayer('/rvizdata')
-
+        
         # Annotator
         self.annotator = None
         # Create menubar
         self.create_top_menubar()
 
+    
         rviz_display_layout = QVBoxLayout()
+        rviz_display_layout.addWidget(self.rviz_tool_bar)
         rviz_display_layout.addWidget(self.rviz_frame)
         rviz_display_layout.addWidget(self.bagPlayer)
 
@@ -314,3 +310,20 @@ class MainApp(QMainWindow):
         color.b = float(b)
         color.a = 0.3
         self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)
+
+    # creating rviz frame main window
+    def _create_rviz_frame(self):
+        rviz_frame = rviz.VisualizationFrame()
+        rviz_frame.initialize()
+        reader = rviz.YamlConfigReader()
+        config = rviz.Config()
+        rviz_config_file_path = os.path.join(self.resource_path, 'vizualization_frame.config.rviz')
+        reader.readFile( config, rviz_config_file_path)
+        rviz_frame.load( config )
+        for button in rviz_frame.findChildren(QAbstractButton):
+            button.hide()
+        # this removes the RVIZ frame menu bar
+        rviz_frame.setMenuBar( None )
+        # removing status bar from RVIZ frame
+        rviz_frame.setStatusBar( None )
+        return rviz_frame
