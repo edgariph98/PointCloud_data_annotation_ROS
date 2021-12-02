@@ -45,6 +45,7 @@ class BagPlayer(QWidget):
         rospy.loginfo(
             "Rosbag updated, Number of Frames: {} ".format(len(self.frames)))
         # publish first frame
+        self.slider.setValue(self.currentFrame)
         self.publishFrame(self.currentFrame)
 
     # initializes ui with connected member callback functions
