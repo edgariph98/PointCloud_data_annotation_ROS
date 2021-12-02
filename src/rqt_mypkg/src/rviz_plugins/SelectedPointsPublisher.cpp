@@ -55,7 +55,7 @@ void SelectedPointsPublisher::updateTopic()
     bb_marker_topic_                    = std::string("/selection/bounding_box_marker");
     annotation_completed_topic          = std::string("/selection/annotation_completed");
     annotation_selected_created_topic   = std::string("/selection/annotation_selected_created");
-    annotation_selected_removed_topic   = std::string("/selectiom/annotation_selected_removed");
+    annotation_selected_removed_topic   = std::string("/selection/annotation_selected_removed");
     
 
     // subscriber to update and remove selection, once annotation has been created
