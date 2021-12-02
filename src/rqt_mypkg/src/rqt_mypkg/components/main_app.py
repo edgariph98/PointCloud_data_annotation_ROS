@@ -210,7 +210,12 @@ class MainApp(QMainWindow):
                     self.load_rosbag_popup.increment_progress_bar()
             
             # Create Annotator with list of frames
-            self.annotator  = Annotator(self.frames)
+            # if annotator does not exist we create a new annotator
+            if not self.annotator:
+                self.annotator  = Annotator(self.frames)
+            # we update frames if annotator already exists
+            else:
+                self.annotator.update_frames(self.frames)
             # Set annotation list window's set of frames
             self.annotation_list.set_frames(self.frames)
 

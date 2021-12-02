@@ -218,8 +218,15 @@ class Annotator(QObject):
         return None
     # when the annotator is initilized we check for any existing annotation in the frames and add them in the set for ids
     def _update_annotation_ids(self):
+        self.annotationIds = set()
         for _frame in self.frames:
             for _annotation in _frame.annotations:
                 self.annotationIds.add(_annotation.getId())
+    
+    # updating frames
+    def update_frames(self,_frames):
+        self.frames = _frames
+        self._update_annotation_ids()
+        self._clearAnnotations()
 
 
