@@ -20,7 +20,7 @@ from annotation_details_window import AnnotationDetailsWindow
 from annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
 from annotation_msgs.msg import annotation_group
-from .auxiliary_functions import get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor, msg_from_frame, frame_from_msg
+from .auxiliary_functions import get_annotation_group_by_name, get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor, msg_from_frame, frame_from_msg
 from .rviz_toolbar import RvizToolBar
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
@@ -56,9 +56,8 @@ class MainApp(QMainWindow):
         
         # Annotator
         self.annotator = None
-        # Create menubar
-        self.create_top_menubar()
-
+        # Create menubar and file dropdown menu
+        self.build_file_dropdown_menu()
     
         rviz_display_layout = QVBoxLayout()
         rviz_display_layout.addWidget(self.rviz_tool_bar)
@@ -80,11 +79,11 @@ class MainApp(QMainWindow):
         central_widget.setLayout(central_widget_layout)
         self.setCentralWidget(central_widget)
 
-    def create_top_menubar(self):
-        # self.statusBar()
+    # def create_top_menubar(self):
+    def build_file_dropdown_menu(self):
         menubar = self.menuBar()
-        # File dropdown
         icon_path = os.path.join(self.resource_path, 'icons')
+        # File dropdown
         load_rosbag_act = QAction(QIcon(os.path.join(icon_path, 'tray-arrow-down.svg')), 'Load rosbag', self)
         load_rosbag_act.triggered.connect(self.launch_load_rosbag_popup)
         export_rosbag_act = QAction(QIcon(os.path.join(icon_path, 'tray-arrow-up.svg')), 'Export annotations', self)
@@ -92,14 +91,18 @@ class MainApp(QMainWindow):
         file_menu = menubar.addMenu('File')
         file_menu.addAction(load_rosbag_act)
         file_menu.addAction(export_rosbag_act)
-        # Annotation group dropdown
+
+    def build_annotation_group_dropdown_menu(self):
+        menubar = self.menuBar()
+        icon_path = os.path.join(self.resource_path, 'icons')
+        # Build annotation group dropdown menu
         create_annotation_group_act = QAction(QIcon(os.path.join(icon_path, 'plus-thick.svg')), 'Create annotation group', self)
         create_annotation_group_act.triggered.connect(self.launch_create_annotation_group_popup)
         delete_annotation_group_act = QAction(QIcon(os.path.join(icon_path, 'delete.svg')), 'Delete annotation group', self)
         delete_annotation_group_act.triggered.connect(self.launch_delete_annotation_group_popup)
         annotation_group_menu = menubar.addMenu('Annotation group')
         annotation_group_menu.addAction(create_annotation_group_act)
-        annotation_group_menu.addAction(delete_annotation_group_act)        
+        annotation_group_menu.addAction(delete_annotation_group_act)
 
     def launch_create_annotation_group_popup(self):
         self.creat_annotation_group_popup = CreateAnnotationGroupPopup(self.annotation_groups)
@@ -122,6 +125,9 @@ class MainApp(QMainWindow):
 
     @pyqtSlot(str, name='delete_annotation_group')
     def delete_annotation_group(self, group_name):
+        # Remove all annotations that belong to this group
+        self.annotator.delete_annotation_group( get_annotation_group_by_name(self.annotation_groups, group_name).id )
+        # Delete the annotation group from the group list
         for group in self.annotation_groups:
             if group.name == group_name:
                 self.annotation_groups.remove(group)
@@ -130,7 +136,7 @@ class MainApp(QMainWindow):
         self.annotation_details.delete_annotation_group(group_name)
         # Remove annotation group from annotation list window
         self.annotation_list.refresh(self.annotator.currentFrame)
-
+        
     def launch_load_rosbag_popup(self): 
         self.load_rosbag_popup = LoadRosbagPopup()
         self.load_rosbag_popup.submitted.connect(self.load_rosbag)
@@ -144,13 +150,17 @@ class MainApp(QMainWindow):
             msg = QMessageBox()
             msg.setIcon(QMessageBox.Warning)
             msg.setText('A rosbag has already been loaded.')
-            msg.setInformativeText('Opening another rosbag will cause any unsaved annotations to be permanently deleted.')
+            msg.setInformativeText('Opening another rosbag will cause any unsaved work to be permanently lost.')
             msg.setWindowTitle('Warning')
             # msg.setDetailedText('The details are as follows:')
             msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
             retval = msg.exec_()
             if retval == QMessageBox.Cancel:
                 return
+            else:
+                connect_components_flag = False
+        else:
+            connect_components_flag = True
         
         path, self.input_path = str(_path), str(_path)
         lidar_topic_name, self.input_lidar_topic_name = str(_lidar_topic_name), str(_lidar_topic_name)
@@ -220,8 +230,9 @@ class MainApp(QMainWindow):
             self.annotation_list.set_frames(self.frames)
 
             if group_topic_exists:
-                for group in self.annotation_groups:
-                    self.delete_annotation_group(group.name)
+                # Delete annotation groups
+                while(len(self.annotation_groups) != 0):
+                    self.delete_annotation_group( self.annotation_groups[0].name )
                 for topic, msg, t in self.bag.read_messages(topics=[group_topic_name]):
                     group_color = get_valid_QColor(msg.color)
                     group = AnnotationGroup(msg.name, group_color, msg.id)
@@ -236,20 +247,23 @@ class MainApp(QMainWindow):
             # Load first frame to viewer here and update our bag player with new frames and loaded bag
             self.bagPlayer.updateBag(lidar_topic_name, self.bag, self.frames,self.annotator)
             # Connect signals and slots between components
-            self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
-            self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
-            self.annotator.annotation_details.connect(self.annotation_details.get_annotation_details)
-            self.annotator.delete_annotation_signal.connect(self.annotation_list.delete_annotation)
-            self.annotator.delete_annotation_signal.connect(self.annotation_details.delete_annotation)
+            if connect_components_flag:
+                self.build_annotation_group_dropdown_menu()
 
-            self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
-            self.annotation_details.cancelled_new_annotation.connect(self.cancelled_new_annotation)
-            self.annotation_details.confirmed_delete_annotation.connect(self.annotator.delete_annotation)
-            self.annotation_details.confirmed_delete_annotation.connect(self.annotation_list.delete_annotation)
+                self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
+                self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
+                self.annotator.annotation_details.connect(self.annotation_details.get_annotation_details)
+                self.annotator.delete_annotation_signal.connect(self.annotation_list.delete_annotation)
+                self.annotator.delete_annotation_signal.connect(self.annotation_details.delete_annotation)
 
-            self.bagPlayer.changed_frame.connect(self.annotation_list.refresh)
-            self.bagPlayer.changed_frame.connect(self.annotation_details.clear_fields)
-            self.annotation_list.annotation_details.connect(self.annotation_details.get_annotation_details)
+                self.annotation_details.confirmed_annotation.connect(self.get_confirmed_annotation)
+                self.annotation_details.cancelled_new_annotation.connect(self.cancelled_new_annotation)
+                self.annotation_details.confirmed_delete_annotation.connect(self.annotator.delete_annotation)
+                self.annotation_details.confirmed_delete_annotation.connect(self.annotation_list.delete_annotation)
+
+                self.bagPlayer.changed_frame.connect(self.annotation_list.refresh)
+                self.bagPlayer.changed_frame.connect(self.annotation_details.clear_fields)
+                self.annotation_list.annotation_details.connect(self.annotation_details.get_annotation_details)
 
     def launch_export_rosbag_popup(self):
         # If a bag has not been loaded notify the user and abort
@@ -272,7 +286,14 @@ class MainApp(QMainWindow):
         topic_name = str(topic_name)
         path = str(path)
         if self.input_path == path:
-	        rospy.logerr("Error: Cannot export to the input rosbag")
+            rospy.logerr("Error: Cannot override input rosbag")
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText('You cannot override the input rosbag.')
+            msg.setWindowTitle('Error')
+            msg.setStandardButtons(QMessageBox.Ok)
+            msg.exec_()
+            return
         with rosbag.Bag(path, 'w') as outbag:
             total_msgs = len(self.frames) + len(self.annotation_groups)
             self.export_rosbag_popup.set_progress_bar_range(total_msgs)
@@ -294,15 +315,12 @@ class MainApp(QMainWindow):
     @pyqtSlot(str, str, str, name='confirm_annotation')
     def get_confirmed_annotation(self, label, annotation_id, group_id):
         group = get_annotation_group_by_id(self.annotation_groups, group_id)
-        print("Recieved from annotation_details_window id :{}, Label: {}, Group id: {}, Group Name: {}".format(
-            annotation_id, label, group_id, group.name))
         valid_color = get_valid_ColorRGBA_MSG(group.color)
         self.annotator.createAnnotation(group_id,label,annotation_id,valid_color)
         self.annotation_list.refresh(self.annotator.currentFrame)
 
     @pyqtSlot(name='cancelled_new_annotation')
     def cancelled_new_annotation(self):
-        print("Annotation just got cancelled")
         self.annotator.remove_selection()
 
     # Todo

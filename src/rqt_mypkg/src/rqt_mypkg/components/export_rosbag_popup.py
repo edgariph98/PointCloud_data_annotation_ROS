@@ -74,7 +74,6 @@ class ExportRosbagPopup(QWidget):
         # Retrieve rosbag path string from file explorer window
         self.path = QFileDialog.getSaveFileName(self, 'Output Path', '/home/output.bag', 'Rosbag Files (*.bag)')[0]
         
-        print(self.path)
         if not self.path:
             # User cancelled the file selection dialog, return
             self.submit_button.setEnabled(False)

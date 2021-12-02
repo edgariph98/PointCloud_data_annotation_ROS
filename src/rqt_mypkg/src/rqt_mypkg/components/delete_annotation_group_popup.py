@@ -58,7 +58,7 @@ class DeleteAnnotationGroupPopup(QWidget):
         # if self.group_dropdown.currentText() != None:
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Warning)
-        msg.setText('Are you sure you want to permanitely delete annotation group: {}?'.format(self.group_dropdown.currentText()))
+        msg.setText('Are you sure you want to permanently delete annotation group: {}?'.format(self.group_dropdown.currentText()))
         msg.setWindowTitle('Warning')
         msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         retval = msg.exec_()

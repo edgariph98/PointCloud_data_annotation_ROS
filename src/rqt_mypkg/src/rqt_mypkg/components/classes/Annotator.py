@@ -158,10 +158,11 @@ class Annotator(QObject):
     
     # deletes an annotation given its annotation id on the current frame, returns boolean determining if deletion was successful
     @pyqtSlot(str, name='confirmed_delete_annotation')
-    def delete_annotation(self,annotation_id):
+    def delete_annotation(self, annotation_id, frame_num=None):
+        annotations = self.currentAnnotations if not frame_num else self.frames[frame_num].annotations
         annotation_found = False
         annotation_index = 0
-        for annotation in self.currentAnnotations:
+        for annotation in annotations:
             if annotation_id == annotation.getId():
                 annotation_found = True
                 break
@@ -170,7 +171,7 @@ class Annotator(QObject):
         # annotation found
         if annotation_found:
             # removing annotation from current set of annotations
-            self.currentAnnotations.pop(annotation_index)
+            annotations.pop(annotation_index)
             #s removing annotation id from set of ids
             self.annotationIds.remove(annotation_id)
             # applying changes to the server
@@ -180,6 +181,12 @@ class Annotator(QObject):
         else:
             self._printErrorMSG("Annotation  with id: {}, not found! deletetion failed...".format(annotation_id))
         return annotation_found
+
+    def delete_annotation_group(self, annotation_group_id):
+        for frame_index, frame in enumerate(self.frames):
+            for annotation in frame.annotations:
+                if annotation.group_id == annotation_group_id:
+                    self.delete_annotation(annotation.id, frame_index)
 
     # creates a common menu for all markers from annotations
     def _create_menu_handler(self):
