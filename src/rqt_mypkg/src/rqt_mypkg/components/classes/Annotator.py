@@ -146,10 +146,9 @@ class Annotator(QObject):
         self.selected_annotation = selected_annotation
         self._printLogMSG("New Annotation selected, Total Points Selected: {}, Bounding Box Marker Scale : x [{}] y [{}] z [{}], Position  x [{}] y [{}] z [{}]".format(
             selected_annotation.num_points, scale.x, scale.y, scale.z, position.x, position.y, position.z))
-        # Send signal with marker details
-        self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
-        # else:
-        #     self.rviz_cancelled_new_annotation.emit()
+        # if selection contains points send signal with marker details
+        if selected_annotation.num_points > 0:
+            self.pending_annotation_marker.emit(scale.x, scale.y, scale.z, position.x, position.y, position.z)
 
     # annotation callback when annotation selection has been removed in rviz
     def _annotation_selected_removed(self, _bool_msg):
