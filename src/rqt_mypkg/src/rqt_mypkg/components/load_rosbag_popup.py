@@ -60,10 +60,19 @@ class LoadRosbagPopup(QWidget):
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(text='Choose LiDAR topic:', font=QFont('Sans', 10)))
         self.layout.addWidget(self.pc2_dropdown)
-        self.layout.addWidget(QLabel(text='Choose annotation topic:', font=QFont('Sans', 10)))
+        
+        self.annot_label = QLabel(text='Choose annotation topic:', font=QFont('Sans', 10))
+        self.layout.addWidget(self.annot_label)
+        self.annot_label.hide()
         self.layout.addWidget(self.annot_dropdown)
-        self.layout.addWidget(QLabel(text='Choose annotation group topic:', font=QFont('Sans', 10)))
+        self.annot_dropdown.hide()
+
+        self.group_label = QLabel(text='Choose annotation group topic:', font=QFont('Sans', 10))
+        self.layout.addWidget(self.group_label)
+        self.group_label.hide()
         self.layout.addWidget(self.group_dropdown)
+        self.group_dropdown.hide()
+
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(QLabel(''))
         self.layout.addWidget(self.progress_bar)
@@ -115,13 +124,19 @@ class LoadRosbagPopup(QWidget):
                     self.group_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
                     found_group_topic = True
             if found_annotation_topic:
+                self.annot_label.show()
+                self.annot_dropdown.show()
                 self.annot_dropdown.setEnabled(True)
             if found_group_topic:
+                self.group_label.show()
+                self.group_dropdown.show()
                 self.group_dropdown.setEnabled(True)
             # Enable dropdown selector and submit button if PC2 topic found
             if found_PC2_topic:
                 self.pc2_dropdown.setEnabled(True)
                 self.submit_button.setEnabled(True)
+            else:
+                self.pc2_dropdown.addItem("No PointCloud2 data found.")
     
     def set_progress_bar_range(self, max_progress):
         self.progress_bar.setRange(0, max_progress)
