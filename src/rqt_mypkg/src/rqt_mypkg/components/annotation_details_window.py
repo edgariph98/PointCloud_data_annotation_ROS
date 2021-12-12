@@ -1,7 +1,7 @@
 from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton, QMessageBox, QLineEdit, QComboBox
 from python_qt_binding.QtGui import QDoubleValidator, QPainter
 from python_qt_binding.QtCore import Qt
-from auxiliary_functions import deleteItemsOfLayout, get_annotation_group_by_name, get_annotation_group_by_id
+from .auxiliary_functions import deleteItemsOfLayout, get_annotation_group_by_name, get_annotation_group_by_id
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtCore import pyqtSlot
 from visualization_msgs.msg import *

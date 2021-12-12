@@ -115,13 +115,13 @@ class LoadRosbagPopup(QWidget):
             bag_type_and_topic_info = bag.get_type_and_topic_info()
             for index, topic in enumerate(bag_type_and_topic_info[1].values()):
                 if 'PointCloud2' in topic[0]:
-                    self.pc2_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
+                    self.pc2_dropdown.addItem(list(bag_type_and_topic_info[1].keys())[index])
                     found_PC2_topic = True
                 elif 'frame' in topic[0]:
-                    self.annot_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
+                    self.annot_dropdown.addItem(list(bag_type_and_topic_info[1].keys())[index])
                     found_annotation_topic = True
                 elif 'group' in topic[0]:
-                    self.group_dropdown.addItem(bag_type_and_topic_info[1].keys()[index])
+                    self.group_dropdown.addItem(list(bag_type_and_topic_info[1].keys())[index])
                     found_group_topic = True
             if found_annotation_topic:
                 self.annot_label.show()

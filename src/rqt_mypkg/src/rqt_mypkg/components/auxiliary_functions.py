@@ -1,8 +1,8 @@
 from std_msgs.msg import ColorRGBA
 from PyQt5.QtGui import QColor
 from annotation_msgs.msg import frame, annotation
-from classes import Frame, Annotator, Annotation, AnnotationGroup
-
+from .classes import Frame, Annotator, Annotation, AnnotationGroup
+import os
 def deleteItemsOfLayout(layout):
      if layout is not None:
          while layout.count():
@@ -57,3 +57,9 @@ def frame_from_msg(t, _msg):
         annot = Annotation(a.id, a.label, a.group, a.marker, a.marker.color, a.captured_point_cloud)
         frame.append(annot)
     return frame
+
+def get_ros_version():
+    """
+    returns ros distribution version on the string
+    """
+    return os.environ.get("ROS_DISTRO")

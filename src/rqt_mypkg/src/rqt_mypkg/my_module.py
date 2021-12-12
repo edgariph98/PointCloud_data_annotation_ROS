@@ -3,7 +3,7 @@ import rospy
 from argparse import ArgumentParser
 import rospkg
 from qt_gui.plugin import Plugin
-from components import MainApp
+from .components import MainApp
 class MyPlugin(Plugin):
 
     def __init__(self, context):

@@ -8,20 +8,24 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QAction, QMessageBox, QAbstractButton
 from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QIcon
 from PyQt5.QtCore import pyqtSlot
-import rviz 
 from std_msgs.msg import ColorRGBA
-from classes import Frame, Annotator, AnnotationGroup
+from .classes import Frame, Annotator, AnnotationGroup
 import rosbag
-from load_rosbag_popup import LoadRosbagPopup
-from export_rosbag_popup import ExportRosbagPopup
-from create_annotation_group_popup import CreateAnnotationGroupPopup
-from delete_annotation_group_popup import DeleteAnnotationGroupPopup
-from annotation_details_window import AnnotationDetailsWindow
-from annotation_list_window import AnnotationListWindow
+from .load_rosbag_popup import LoadRosbagPopup
+from .export_rosbag_popup import ExportRosbagPopup
+from .create_annotation_group_popup import CreateAnnotationGroupPopup
+from .delete_annotation_group_popup import DeleteAnnotationGroupPopup
+from .annotation_details_window import AnnotationDetailsWindow
+from .annotation_list_window import AnnotationListWindow
 from .BagPlayer import BagPlayer
 from annotation_msgs.msg import annotation_group
-from .auxiliary_functions import get_annotation_group_by_name, get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor, msg_from_frame, frame_from_msg
+from .auxiliary_functions import get_annotation_group_by_name, get_annotation_group_by_id, get_valid_ColorRGBA_MSG, get_valid_QColor, msg_from_frame, frame_from_msg, get_ros_version
 from .rviz_toolbar import RvizToolBar
+if get_ros_version() == "noetic":
+    from rviz import bindings as rviz
+elif get_ros_version() == "melodic":
+    import rviz
+    
 # Main App widget to be imported in RQT Plugin
 class MainApp(QMainWindow):
     def __init__(self):
