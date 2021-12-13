@@ -2,6 +2,8 @@ from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayou
 from python_qt_binding.QtGui import QPixmap, QColor, QIcon, QStandardItemModel, QStandardItem, QBrush
 from python_qt_binding.QtCore import Qt
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
+import os
+import rospkg
 
 class AnnotationListWindow(QWidget):
 
@@ -9,12 +11,29 @@ class AnnotationListWindow(QWidget):
 
     def __init__(self, _frames, _annotation_groups):
         QWidget.__init__(self)
-        
+
+        self.resource_path = os.path.join(rospkg.RosPack().get_path('rqt_mypkg'), 'resource')
+        icon_path = os.path.join(self.resource_path, 'icons')
+
         self.frames = _frames
         self.annotation_groups = _annotation_groups
         self.current_annotations = []
         self.current_frame = 0
+
+        # Create annotation group buttons
+        button_layout = QHBoxLayout()
+        self.create_group_button = QPushButton(QIcon(os.path.join(icon_path, 'plus-thick.svg')), 'Create Group')
+        self.create_group_button.setProperty('class', 'dark')
+        self.create_group_button.setVisible(False)
+        self.delete_group_button = QPushButton(QIcon(os.path.join(icon_path, 'delete.svg')), 'Delete Group')
+        self.delete_group_button.setProperty('class', 'dark')
+        self.delete_group_button.setVisible(False)
+        button_layout.addWidget(self.create_group_button)
+        button_layout.addWidget(self.delete_group_button)
+
+        # Create QTreeView and model
         self.treeview = QTreeView(self)
+        self.treeview.setStyleSheet("border: none;")
         self.treeview.setHeaderHidden(True)
         self.treeview.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
@@ -25,8 +44,16 @@ class AnnotationListWindow(QWidget):
         self.treeview.setColumnWidth(0, 150)
         self.treeview.hideColumn(1)
 
+        # Creat spacing label component
+        spacing_label = QLabel('')
+        spacing_label.setStyleSheet('background-color: rgb(31,30,31);')
+
+        # Add to components to layout
         layout = QVBoxLayout(self)
-        layout.addWidget(self.treeview)
+        layout.setSpacing(0)
+        layout.addLayout(button_layout)
+        layout.addWidget(spacing_label)
+        layout.addWidget(self.treeview) 
         self.setLayout(layout)
 
         self.treeview.selectionModel().selectionChanged.connect(self.on_selection_change)
@@ -85,15 +112,6 @@ class AnnotationListWindow(QWidget):
         if self.model.hasChildren():
             self.model.removeRows(0, self.model.rowCount())
 
-    # def add_annotation_group(self, new_annotation_group):
-    #     # Create color icon
-    #     pixmap = QPixmap(100, 100)
-    #     pixmap.fill(QColor(new_annotation_group.color))
-    #     color_icon = QIcon(pixmap)
-    #     # Add new group to tree
-    #     self.model.appendRow([QStandardItem(color_icon, new_annotation_group.name), QStandardItem(new_annotation_group.id)])
-
-    # def delete_annotation_group(self, annotation_group_id):
-    #     matching_item_list = self.model.findItems(annotation_group_id, Qt.MatchFixedString, 1)
-    #     if matching_item_list:
-    #         self.model.removeRows( matching_item_list[0].row(), 1, self.treeview.rootIndex() )
+    def display_buttons(self):
+        self.create_group_button.setVisible(True)
+        self.delete_group_button.setVisible(True)

@@ -37,8 +37,34 @@ QToolTip {
     border: none;
 }
 
-QMenuBar::item {
+QMenuBar {
     background-color: rgb(58,57,58); /* dark */
+    font-size: 15px;
+}
+
+QMenuBar::item:selected {
+    background-color: rgb(88,87,88); /* kindaDark */
+}
+
+QMenu::item {
+    color: rgb(225,224,225); /* veryLight */
+    background-color: rgb(88,87,88); /* kindaDark */
+}
+
+QMenu::item:flat {
+    background-color: rgb(58,57,58); /* dark */
+}
+
+QMenu::item:selected {
+    background-color: rgb(122,121,122); /* light */
+}
+
+QMenu::item:pressed {
+    background-color: rgb(31,30,31); /* veryDark */
+}
+
+QMenu::item:checked {
+    background-color: rgb(122,121,122); /* light */
 }
 
 QListWidget::item:selected:!active {
@@ -134,7 +160,7 @@ QToolBar {
 }
 
 QToolButton:hover {
-    background-color: rgb(122,121,122); /* light */
+    background-color: rgb(88,87,88); /* kindaDark */
     border-radius: none;
 }
 
@@ -438,4 +464,30 @@ QLabel#warningLabel {
 QLabel#errorLabel {
     color: rgb(192, 0, 0);
     font-weight: bold;
+}
+
+QPushButton.dark {
+    color: rgb(225,224,225); /* veryLight */
+    background-color: rgb(31,30,31); /* veryDark */
+    border: none;
+    border-radius: 0px;
+    padding: 4px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+QPushButton::flat.dark {
+    background-color: rgb(58,57,58); /* dark */
+}
+
+QPushButton:hover.dark {
+    background-color: rgb(88,87,88); /* kindaDark */
+}
+
+QPushButton:pressed.dark {
+    background-color: rgb(58,57,58); /* dark */
+}
+
+QPushButton:checked.dark {
+    background-color: rgb(88,87,88); /* kindaDark */
 }

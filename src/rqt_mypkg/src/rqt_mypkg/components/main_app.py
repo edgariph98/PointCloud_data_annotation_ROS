@@ -5,7 +5,7 @@ from interactive_markers.interactive_marker_server import MarkerContext
 import rospy
 import rospkg
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,QMainWindow, QAction, QMessageBox, QAbstractButton
+from python_qt_binding.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout,QMainWindow, QAction, QMessageBox, QAbstractButton
 from PyQt5.QtGui import QIcon, QColor, QFontDatabase, QIcon
 from PyQt5.QtCore import pyqtSlot
 from std_msgs.msg import ColorRGBA
@@ -73,6 +73,7 @@ class MainApp(QMainWindow):
         self.annotation_list = AnnotationListWindow(self.frames, self.annotation_groups)
         self.annotation_details = AnnotationDetailsWindow(self.annotation_groups)
         annotations_layout.addWidget(self.annotation_list)
+        annotations_layout.addWidget(QLabel(''))
         annotations_layout.addWidget(self.annotation_details)
 
         # Set MainWindow's central widget
@@ -253,6 +254,7 @@ class MainApp(QMainWindow):
             # Connect signals and slots between components
             if connect_components_flag:
                 self.build_annotation_group_dropdown_menu()
+                self.annotation_list.display_buttons()
 
                 self.annotator.pending_annotation_marker.connect(self.annotation_details.get_pending_annotation_marker)
                 self.annotator.rviz_cancelled_new_annotation.connect(self.annotation_details.rviz_cancelled_new_annotation)
@@ -268,6 +270,8 @@ class MainApp(QMainWindow):
                 self.bagPlayer.changed_frame.connect(self.annotation_list.refresh)
                 self.bagPlayer.changed_frame.connect(self.annotation_details.clear_fields)
                 self.annotation_list.annotation_details.connect(self.annotation_details.get_annotation_details)
+                self.annotation_list.create_group_button.clicked.connect(self.launch_create_annotation_group_popup)
+                self.annotation_list.delete_group_button.clicked.connect(self.launch_delete_annotation_group_popup)
 
     def launch_export_rosbag_popup(self):
         # If a bag has not been loaded notify the user and abort
