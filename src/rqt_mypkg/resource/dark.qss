@@ -491,3 +491,7 @@ QPushButton:pressed.dark {
 QPushButton:checked.dark {
     background-color: rgb(88,87,88); /* kindaDark */
 }
+
+QLabel.widgetTitle {
+    font-size: 17px;
+}

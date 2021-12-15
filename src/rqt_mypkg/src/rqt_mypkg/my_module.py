@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 import rospkg
 from qt_gui.plugin import Plugin
 from .components import MainApp
+import rospy
 class MyPlugin(Plugin):
 
     def __init__(self, context):
@@ -19,8 +20,8 @@ class MyPlugin(Plugin):
                       help="Put plugin in silent mode")
         args, unknowns = parser.parse_known_args(context.argv())
         if not args.quiet:
-            print('arguments: ', args)
-            print('unknowns: ', unknowns)
+            rospy.loginfo('arguments: {} '.format( str(args)))
+            rospy.loginfo('unknowns: {} '.format(str(unknowns)))
             
         # Adding Main App Widget 
         context.add_widget(MainApp())

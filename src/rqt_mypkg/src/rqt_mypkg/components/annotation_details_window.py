@@ -19,8 +19,6 @@ class AnnotationDetailsWindow(QWidget):
         self.current_annotation_id = ''
         # Set state flags
         self.prompt_new_annotation_flag = False
-        self.new_pending_annotation_marker = False
-        self.new_pending_annotation_points = False
         self.showing_details_flag = False
         # Title
         self.title = QLabel('Annotation Details')
@@ -192,29 +190,13 @@ class AnnotationDetailsWindow(QWidget):
 
     @pyqtSlot(float, float, float, float, float, float, name='get_pending_annotation_marker')
     def get_pending_annotation_marker(self, x_scale, y_scale, z_scale, x_position, y_position, z_position):
-        self.new_pending_annotation_marker = True
         self.pending_annotation['x_scale'] = x_scale
         self.pending_annotation['y_scale'] = y_scale
         self.pending_annotation['z_scale'] = z_scale
         self.pending_annotation['x_position'] = x_position
         self.pending_annotation['y_position'] = y_position
         self.pending_annotation['z_position'] = z_position
-
-        # If the points signal has also been received, enter new annotation mode
-        if not self.new_pending_annotation_points:
-            self.new_pending_annotation_marker = False
-            self.new_pending_annotation_points = False
-            self.prompt_new_annotation()
-    
-    @pyqtSlot(name='get_pending_annotation_points')
-    def get_pending_annotation_points(self):
-        self.new_pending_annotation_points = True
-
-        # If the points signal has also been received, enter new annotation mode
-        if self.new_pending_annotation_marker:
-            self.new_pending_annotation_marker = False
-            self.new_pending_annotation_points = False
-            self.prompt_new_annotation()
+        self.prompt_new_annotation()
 
     @pyqtSlot(name='rviz_cancelled_new_annotation')
     def rviz_cancelled_new_annotation(self):

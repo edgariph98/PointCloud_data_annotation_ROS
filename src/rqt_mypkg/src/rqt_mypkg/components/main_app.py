@@ -128,6 +128,7 @@ class MainApp(QMainWindow):
         self.delete_annotation_group_popup.deleted.connect(self.delete_annotation_group)
         self.delete_annotation_group_popup.show()
 
+    #removes groups, including annotations
     @pyqtSlot(str, name='delete_annotation_group')
     def delete_annotation_group(self, group_name):
         # Remove all annotations that belong to this group
@@ -141,7 +142,19 @@ class MainApp(QMainWindow):
         self.annotation_details.delete_annotation_group(group_name)
         # Remove annotation group from annotation list window
         self.annotation_list.refresh(self.annotator.currentFrame)
-        
+
+    # deletes only the annotation groups for the tdetils of the group window only
+    def delete_annotation_group_details(self, group_name):
+        # Delete the annotation group from the group list
+        for group in self.annotation_groups:
+            if group.name == group_name:
+                self.annotation_groups.remove(group)
+                break
+        # Update drop down options in annotation details window
+        self.annotation_details.delete_annotation_group(group_name)
+        # Remove annotation group from annotation list window
+        self.annotation_list.refresh(self.annotator.currentFrame)
+
     def launch_load_rosbag_popup(self): 
         self.load_rosbag_popup = LoadRosbagPopup()
         self.load_rosbag_popup.submitted.connect(self.load_rosbag)
@@ -227,7 +240,7 @@ class MainApp(QMainWindow):
             # Create Annotator with list of frames
             # if annotator does not exist we create a new annotator
             if not self.annotator:
-                self.annotator  = Annotator(self.frames)
+                self.annotator = Annotator(self.frames)
             # we update frames if annotator already exists
             else:
                 self.annotator.update_frames(self.frames)
@@ -237,7 +250,7 @@ class MainApp(QMainWindow):
             if group_topic_exists:
                 # Delete annotation groups
                 while(len(self.annotation_groups) != 0):
-                    self.delete_annotation_group( self.annotation_groups[0].name )
+                    self.delete_annotation_group_details( self.annotation_groups[0].name)
                 for topic, msg, t in self.bag.read_messages(topics=[group_topic_name]):
                     group_color = get_valid_QColor(msg.color)
                     group = AnnotationGroup(msg.name, group_color, msg.id)
@@ -245,7 +258,7 @@ class MainApp(QMainWindow):
                         self.annotation_groups.append(group)
                         # Update drop down options in annotation details window
                         self.annotation_details.add_annotation_group(msg.name)
-                        # Remove annotation group from annotation list window
+                        # Add annotation group annotation list window
                         self.annotation_list.refresh(self.annotator.currentFrame)
                         self.load_rosbag_popup.increment_progress_bar()
 
@@ -289,8 +302,8 @@ class MainApp(QMainWindow):
         self.export_rosbag_popup.submitted.connect(self.export_rosbag)
         self.export_rosbag_popup.show()
 
-    @pyqtSlot(str, str, bool, name='export_rosbag') 
-    def export_rosbag(self, path, topic_name, export_lidar):
+    @pyqtSlot(str, str, name='export_rosbag') 
+    def export_rosbag(self, path, topic_name):
         topic_name = str(topic_name)
         path = str(path)
         if self.input_path == path:
@@ -330,17 +343,6 @@ class MainApp(QMainWindow):
     @pyqtSlot(name='cancelled_new_annotation')
     def cancelled_new_annotation(self):
         self.annotator.remove_selection()
-
-    # Todo
-    # 1. Emit signal for new annotation point info 'self.pending_annotation_points.emit(values whatever they are)'
-
-    def createAnnotation(self,label,groupName,r,g,b):
-        color = ColorRGBA()
-        color.r = float(r)
-        color.g = float(g)
-        color.b = float(b)
-        color.a = 0.3
-        self.annotator.createAnnotation(groupName,label,str(uuid.uuid4()), color)
 
     # creating rviz frame main window
     def _create_rviz_frame(self):

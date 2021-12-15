@@ -8,7 +8,7 @@ from PyQt5.QtCore import pyqtSignal
 
 class ExportRosbagPopup(QWidget):
 
-    submitted = pyqtSignal(str, str, bool, name='export_rosbag')
+    submitted = pyqtSignal(str, str, name='export_rosbag')
 
     def __init__(self):
         QWidget.__init__(self)
@@ -67,7 +67,7 @@ class ExportRosbagPopup(QWidget):
         self.setStyleSheet(self.style)
 
     def on_submit(self):
-        self.submitted.emit( self.path, self.annot_topic_name.text(), True )
+        self.submitted.emit( self.path, self.annot_topic_name.text() )
         self.close()
 
     def get_rosbag_filename(self):

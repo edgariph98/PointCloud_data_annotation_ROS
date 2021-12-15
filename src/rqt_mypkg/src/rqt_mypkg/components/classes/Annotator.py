@@ -8,7 +8,7 @@ from annotation_msgs.msg import Annotation as Annotation_msg
 from std_msgs.msg import Bool as Bool_msg
 from interactive_markers.menu_handler import MenuHandler
 from PyQt5.QtCore import pyqtSignal, pyqtSlot,QObject
-
+from copy import deepcopy
 class Annotator(QObject):
 
     pending_annotation_marker = pyqtSignal(float, float, float, float, float, float, name='get_pending_annotation_marker')
@@ -137,8 +137,6 @@ class Annotator(QObject):
         selected_annotation # Annotation_msg
         ):
         boundingBoxMarker = selected_annotation.bounding_box
-        # we only use the bounding box marker if its not being deleted
-        # if not boundingBoxMarker.action == Marker.DELETE:
         # scale and position of the annotation
         scale = boundingBoxMarker.scale
         position = boundingBoxMarker.pose.position
@@ -158,7 +156,9 @@ class Annotator(QObject):
     # deletes an annotation given its annotation id on the current frame, returns boolean determining if deletion was successful
     @pyqtSlot(str, name='confirmed_delete_annotation')
     def delete_annotation(self, annotation_id, frame_num=None):
-        annotations = self.currentAnnotations if not frame_num else self.frames[frame_num].annotations
+        annotations = self.currentAnnotations
+        if frame_num != None:
+            annotations = self.frames[frame_num].annotations
         annotation_found = False
         annotation_index = 0
         for annotation in annotations:
@@ -183,10 +183,11 @@ class Annotator(QObject):
 
     def delete_annotation_group(self, annotation_group_id):
         for frame_index, frame in enumerate(self.frames):
-            for annotation in frame.annotations:
+            annotations = [ deepcopy(annotation) for annotation in frame.annotations ]
+            for annotation in annotations:
                 if annotation.group_id == annotation_group_id:
                     self.delete_annotation(annotation.id, frame_index)
-
+    
     # creates a common menu for all markers from annotations
     def _create_menu_handler(self):
         menu = MenuHandler()
@@ -222,6 +223,7 @@ class Annotator(QObject):
             if annotation_id == annotation.getId():
                 return annotation
         return None
+
     # when the annotator is initilized we check for any existing annotation in the frames and add them in the set for ids
     def _update_annotation_ids(self):
         self.annotationIds = set()
